@@ -9,6 +9,7 @@ dependencies = [
     "pydantic>=2.0",
     "aiocoap",
     "cbor2",
+    "sqlalchemy",
 ]
 
 [project.optional-dependencies]
@@ -38,7 +39,7 @@ typecheck = "mypy sense_web"
 test = "pytest tests"
 
 [tool.ruff]
-line-length = 80
+line-length = 79 
 
 [tool.ruff.format]
 quote-style = "double"
