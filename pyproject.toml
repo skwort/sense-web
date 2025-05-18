@@ -10,6 +10,7 @@ dependencies = [
     "aiocoap",
     "cbor2",
     "sqlalchemy",
+    "aiosqlite",
 ]
 
 [project.optional-dependencies]
@@ -19,11 +20,15 @@ dev = [
     "pytest",
     "anyio",
     "httpx",
+    "pytest-asyncio",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
 
 [tool.hatch.build.targets.wheel]
 packages = ["sense_web"]
