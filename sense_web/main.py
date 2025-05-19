@@ -1,4 +1,3 @@
-import asyncio
 import os
 import sys
 import signal
@@ -8,12 +7,9 @@ from types import FrameType
 from typing import List, Optional, Any
 import logging as log
 
-import sense_web.db as db
 from sense_web.api.server import start_api
 
 log.basicConfig(level=log.INFO)
-
-DB_URI = os.getenv("DATABASE_URI", "sqlite+aiosqlite:///./dev.db")
 
 procs: List[subprocess.Popen[Any]] = []
 
@@ -33,9 +29,6 @@ def shutdown_handler(sig: int, frame: Optional[FrameType]) -> None:
 
 
 if __name__ == "__main__":
-    # Initialise the database
-    asyncio.run(db.session.sessionmanager.init(DB_URI))
-
     # Start the REST API
     api_proc = start_api(
         "0.0.0.0",

@@ -1,19 +1,24 @@
+import os
 import sys
 import subprocess
 from typing import IO, Dict, AsyncIterator, Any
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter
-from .routes import root
+from .routes import root, register
 
 from sense_web.db.session import sessionmanager
 
+DB_URI = os.getenv("DATABASE_URI", "sqlite+aiosqlite:///./dev.db")
+
 api_router = APIRouter()
 api_router.include_router(root.router)
+api_router.include_router(register.router)
 
 
 def init_api() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        await sessionmanager.init(DB_URI)
         yield
         if sessionmanager._engine is not None:
             await sessionmanager.close()
