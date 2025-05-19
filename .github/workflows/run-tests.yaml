@@ -2,7 +2,13 @@ name: Run Tests
 
 on:
   push:
+    paths:
+      - "sense_web/**"
+      - "tests/**"
   pull_request:
+    paths:
+      - "sense_web/**"
+      - "tests/**"
 
 jobs:
   run-tests:
