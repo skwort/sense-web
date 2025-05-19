@@ -1,5 +1,6 @@
 import pytest
 import uuid
+from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sense_web.db.base import Base
@@ -8,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 
 @pytest.fixture
-def db_session() -> Session:
+def db_session() -> Generator[Session, None, None]:
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
     session = Session(engine)
@@ -16,7 +17,7 @@ def db_session() -> Session:
     session.close()
 
 
-def test_create_device(db_session):
+def test_create_device(db_session: Session) -> None:
     imei = "123456789012345"
     device_uuid = uuid.uuid4()
     device = Device(imei=imei, uuid=device_uuid)
@@ -29,7 +30,7 @@ def test_create_device(db_session):
     assert str(device.uuid) == str(device_uuid)
 
 
-def test_unique_imei_constraint(db_session):
+def test_unique_imei_constraint(db_session: Session) -> None:
     device1 = Device(imei="123456789012345", uuid=uuid.uuid4())
     device2 = Device(imei="123456789012345", uuid=uuid.uuid4())
 
@@ -41,7 +42,7 @@ def test_unique_imei_constraint(db_session):
         db_session.commit()
 
 
-def test_unique_uuid_constraint(db_session):
+def test_unique_uuid_constraint(db_session: Session) -> None:
     fixed_uuid = uuid.uuid4()
     device1 = Device(imei="123456789012345", uuid=fixed_uuid)
     device2 = Device(imei="543210987654321", uuid=fixed_uuid)
@@ -54,14 +55,14 @@ def test_unique_uuid_constraint(db_session):
         db_session.commit()
 
 
-def test_missing_imei_raises(db_session):
+def test_missing_imei_raises(db_session: Session) -> None:
     device = Device(imei=None, uuid=uuid.uuid4())
     db_session.add(device)
     with pytest.raises(IntegrityError):
         db_session.commit()
 
 
-def test_get_device_by_imei(db_session):
+def test_get_device_by_imei(db_session: Session) -> None:
     imei = "123456789012345"
     device = Device(imei=imei, uuid=uuid.uuid4())
     db_session.add(device)
@@ -72,7 +73,7 @@ def test_get_device_by_imei(db_session):
     assert fetched.imei == imei
 
 
-def test_get_device_by_uuid(db_session):
+def test_get_device_by_uuid(db_session: Session) -> None:
     device_uuid = uuid.uuid4()
     device = Device(imei="123456789012345", uuid=device_uuid)
     db_session.add(device)
@@ -85,7 +86,7 @@ def test_get_device_by_uuid(db_session):
     assert str(fetched.uuid) == str(device_uuid)
 
 
-def test_update_device_imei(db_session):
+def test_update_device_imei(db_session: Session) -> None:
     device = Device(imei="123456789012345", uuid=uuid.uuid4())
     db_session.add(device)
     db_session.commit()
@@ -97,7 +98,7 @@ def test_update_device_imei(db_session):
     assert updated.imei == "543210987654321"
 
 
-def test_delete_device(db_session):
+def test_delete_device(db_session: Session) -> None:
     device = Device(imei="123456789012345", uuid=uuid.uuid4())
     db_session.add(device)
     db_session.commit()

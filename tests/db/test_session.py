@@ -1,5 +1,6 @@
 import pytest
 import uuid
+from typing import AsyncGenerator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import text
@@ -11,7 +12,7 @@ DB_URI = "sqlite+aiosqlite:///:memory:"
 
 
 @pytest.fixture
-async def db_manager():
+async def db_manager() -> AsyncGenerator[DatabaseSessionManager, None]:
     manager = DatabaseSessionManager()
     await manager.init(DB_URI)
     yield manager
@@ -19,7 +20,9 @@ async def db_manager():
 
 
 @pytest.mark.asyncio
-async def test_session_manager_provides_session(db_manager):
+async def test_session_manager_provides_session(
+    db_manager: DatabaseSessionManager,
+) -> None:
     async with db_manager.session() as session:
         assert isinstance(session, AsyncSession)
         result = await session.execute(text("SELECT 1"))
@@ -27,7 +30,7 @@ async def test_session_manager_provides_session(db_manager):
 
 
 @pytest.mark.asyncio
-async def test_session_manager_rejects_use_before_init():
+async def test_session_manager_rejects_use_before_init() -> None:
     manager = DatabaseSessionManager()
 
     with pytest.raises(Exception, match="not initialised"):
@@ -36,7 +39,9 @@ async def test_session_manager_rejects_use_before_init():
 
 
 @pytest.mark.asyncio
-async def test_double_close_is_safe(db_manager):
+async def test_double_close_is_safe(
+    db_manager: DatabaseSessionManager,
+) -> None:
     # First close already happened via fixture teardown
     # Closing again shouldn't raise an exception
     await db_manager.close()
@@ -45,7 +50,9 @@ async def test_double_close_is_safe(db_manager):
 
 
 @pytest.mark.asyncio
-async def test_session_manager_commit(db_manager):
+async def test_session_manager_commit(
+    db_manager: DatabaseSessionManager,
+) -> None:
     async with db_manager.connect() as conn:
         await db_manager.create_all(conn)
 
@@ -69,7 +76,9 @@ async def test_session_manager_commit(db_manager):
 
 
 @pytest.mark.asyncio
-async def test_session_manager_rollback_on_error(db_manager):
+async def test_session_manager_rollback_on_error(
+    db_manager: DatabaseSessionManager,
+) -> None:
     class DummyError(Exception):
         pass
 

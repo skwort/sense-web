@@ -24,11 +24,11 @@ class DatabaseSessionManager:
     if you need direct access to a lower-level connection.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._engine: AsyncEngine | None = None
-        self._sessionmaker: async_sessionmaker | None = None
+        self._sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
-    async def init(self, db_uri: str):
+    async def init(self, db_uri: str) -> None:
         self._engine = create_async_engine(db_uri)
         self._sessionmaker = async_sessionmaker(
             autocommit=False, bind=self._engine
@@ -41,7 +41,7 @@ class DatabaseSessionManager:
                     log.info(f"Creating database: {path}")
                     await self.create_all(connection)
 
-    async def close(self):
+    async def close(self) -> None:
         if self._engine is not None:
             await self._engine.dispose()
             self._engine = None
@@ -74,8 +74,8 @@ class DatabaseSessionManager:
         finally:
             await session.close()
 
-    async def create_all(self, connection: AsyncConnection):
+    async def create_all(self, connection: AsyncConnection) -> None:
         await connection.run_sync(Base.metadata.create_all)
 
-    async def drop_all(self, connection: AsyncConnection):
+    async def drop_all(self, connection: AsyncConnection) -> None:
         await connection.run_sync(Base.metadata.drop_all)
