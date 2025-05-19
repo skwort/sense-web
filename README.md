@@ -1,4 +1,6 @@
 # SENSE Web
+[![Run Tests](https://github.com/skwort/sense-web/actions/workflows/run-tests.yaml/badge.svg)](https://github.com/skwort/sense-web/actions/workflows/run-tests.yaml)
+
 `sense-web` is the cloud backend for the SENSE Core data logger, responsible
 for managing CoAP requests from devices and exposing a RESTful API for remote
 device management.
