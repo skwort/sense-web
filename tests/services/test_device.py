@@ -1,4 +1,5 @@
 import pytest
+import uuid
 from typing import AsyncGenerator
 
 from sense_web.exceptions import DeviceAlreadyExists
@@ -64,3 +65,20 @@ async def test_list_devices(db_manager: DatabaseSessionManager) -> None:
     fetched_imeis = [d.imei for d in devices]
     for imei in imeis:
         assert imei in fetched_imeis
+
+
+@pytest.mark.asyncio
+async def test_get_device_by_imei_not_found(
+    db_manager: DatabaseSessionManager,
+) -> None:
+    device = await get_device_by_imei("nonexistent-imei")
+    assert device is None
+
+
+@pytest.mark.asyncio
+async def test_get_device_by_uuid_not_found(
+    db_manager: DatabaseSessionManager,
+) -> None:
+    random_uuid = uuid.uuid4()
+    device = await get_device_by_uuid(random_uuid)
+    assert device is None

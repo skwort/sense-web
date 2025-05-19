@@ -27,6 +27,8 @@ async def get_device_by_uuid(uuid: uuid.UUID) -> Optional[DeviceDTO]:
     async with sessionmanager.session() as session:
         stmt = select(Device).where(Device.uuid == uuid)
         result = (await session.execute(stmt)).scalars().one_or_none()
+        if result is None:
+            return None
         return DeviceDTO.model_validate(result)
 
 
@@ -34,6 +36,8 @@ async def get_device_by_imei(imei: str) -> Optional[DeviceDTO]:
     async with sessionmanager.session() as session:
         stmt = select(Device).where(Device.imei == imei)
         result = (await session.execute(stmt)).scalars().one_or_none()
+        if result is None:
+            return None
         return DeviceDTO.model_validate(result)
 
 
