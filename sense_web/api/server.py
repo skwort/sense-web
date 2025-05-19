@@ -4,7 +4,7 @@ import subprocess
 from typing import IO, Dict, AsyncIterator, Any
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter
-from .routes import root, register
+from .routes import root, devices
 
 from sense_web.db.session import sessionmanager
 
@@ -12,7 +12,7 @@ DB_URI = os.getenv("DATABASE_URI", "sqlite+aiosqlite:///./dev.db")
 
 api_router = APIRouter()
 api_router.include_router(root.router)
-api_router.include_router(register.router)
+api_router.include_router(devices.router)
 
 
 def init_api() -> FastAPI:
