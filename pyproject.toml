@@ -21,6 +21,7 @@ dev = [
     "anyio",
     "httpx",
     "pytest-asyncio",
+    "pytest-cov"
 ]
 
 [build-system]
@@ -29,6 +30,7 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+addopts = "--cov=sense_web --cov-report=html"
 
 [tool.hatch.build.targets.wheel]
 packages = ["sense_web"]
