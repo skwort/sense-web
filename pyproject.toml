@@ -32,6 +32,12 @@ build-backend = "hatchling.build"
 asyncio_mode = "auto"
 addopts = "--cov=sense_web --cov-report=html"
 
+[tool.coverage.run]
+branch = true
+parallel = true
+source = ["sense_web"]
+
+
 [tool.hatch.build.targets.wheel]
 packages = ["sense_web"]
 
