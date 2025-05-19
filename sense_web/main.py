@@ -34,7 +34,7 @@ def shutdown_handler(sig: int, frame: Optional[FrameType]) -> None:
 
 if __name__ == "__main__":
     # Initialise the database
-    asyncio.run(db.sessionmanager.init(DB_URI))
+    asyncio.run(db.session.sessionmanager.init(DB_URI))
 
     # Start the REST API
     api_proc = start_api(

@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter
 from .routes import root
 
-from sense_web.db import sessionmanager
+from sense_web.db.session import sessionmanager
 
 api_router = APIRouter()
 api_router.include_router(root.router)
