@@ -89,3 +89,82 @@ def test_api_device_register_already_exists(
         response = client.post("/api/devices", json=data, timeout=2)
 
         assert response.status_code == 409
+
+
+def test_api_device_list_all(api_server: str, db_manager: None) -> None:
+    with httpx.Client(base_url=api_server) as client:
+        # Register two devices
+        device1 = {"imei": "100000000000001"}
+        device2 = {"imei": "100000000000002"}
+
+        res1 = client.post("/api/devices", json=device1, timeout=2)
+        res2 = client.post("/api/devices", json=device2, timeout=2)
+
+        assert res1.status_code == 201
+        assert res2.status_code == 201
+
+        # Get all devices
+        response = client.get("/api/devices", timeout=2)
+
+        assert response.status_code == 200
+        devices = response.json()
+        assert isinstance(devices, list)
+        assert len(devices) == 2
+
+        imeis = [d["imei"] for d in devices]
+        assert device1["imei"] in imeis
+        assert device2["imei"] in imeis
+
+
+def test_api_device_get_by_uuid(api_server: str, db_manager: None) -> None:
+    with httpx.Client(base_url=api_server) as client:
+        data = {"imei": "200000000000001"}
+        register_response = client.post("/api/devices", json=data, timeout=2)
+
+        assert register_response.status_code == 201
+        uuid = register_response.json()["uuid"]
+
+        response = client.get(f"/api/devices/{uuid}", timeout=2)
+
+        assert response.status_code == 200
+        device = response.json()
+        assert device["imei"] == data["imei"]
+        assert device["uuid"] == uuid
+
+
+def test_api_device_get_by_imei(api_server: str, db_manager: None) -> None:
+    with httpx.Client(base_url=api_server) as client:
+        data = {"imei": "200000000000002"}
+        register_response = client.post("/api/devices", json=data, timeout=2)
+
+        assert register_response.status_code == 201
+        uuid = register_response.json()["uuid"]
+
+        response = client.get(f"/api/devices/imei/{data['imei']}", timeout=2)
+
+        assert response.status_code == 200
+        device = response.json()
+        assert device["imei"] == data["imei"]
+        assert device["uuid"] == uuid
+
+
+def test_api_device_get_by_uuid_not_found(
+    api_server: str, db_manager: None
+) -> None:
+    with httpx.Client(base_url=api_server) as client:
+        unknown_uuid = "00000000-0000-0000-0000-000000000000"
+        response = client.get(f"/api/devices/{unknown_uuid}", timeout=2)
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Device not found"
+
+
+def test_api_device_get_by_imei_not_found(
+    api_server: str, db_manager: None
+) -> None:
+    with httpx.Client(base_url=api_server) as client:
+        unknown_imei = "999999999999999"
+        response = client.get(f"/api/devices/imei/{unknown_imei}", timeout=2)
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Device not found"
