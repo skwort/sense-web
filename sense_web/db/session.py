@@ -1,4 +1,5 @@
 import contextlib
+import os
 from typing import AsyncIterator
 from sqlalchemy.ext.asyncio import (
     AsyncConnection,
@@ -8,6 +9,9 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from .base import Base
+import logging as log
+
+log.basicConfig(level=log.INFO)
 
 
 class DatabaseSessionManager:
@@ -24,11 +28,18 @@ class DatabaseSessionManager:
         self._engine: AsyncEngine | None = None
         self._sessionmaker: async_sessionmaker | None = None
 
-    def init(self, db_uri: str):
+    async def init(self, db_uri: str):
         self._engine = create_async_engine(db_uri)
         self._sessionmaker = async_sessionmaker(
             autocommit=False, bind=self._engine
         )
+
+        if db_uri.startswith("sqlite+aiosqlite:///"):
+            path = db_uri.split(":///")[-1]
+            if not os.path.exists(path) and not path == ":memory:":
+                async with self.connect() as connection:
+                    log.info(f"Creating database: {path}")
+                    await self.create_all(connection)
 
     async def close(self):
         if self._engine is not None:

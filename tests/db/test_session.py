@@ -13,7 +13,7 @@ DB_URI = "sqlite+aiosqlite:///:memory:"
 @pytest.fixture
 async def db_manager():
     manager = DatabaseSessionManager()
-    manager.init(DB_URI)
+    await manager.init(DB_URI)
     yield manager
     await manager.close()
 
