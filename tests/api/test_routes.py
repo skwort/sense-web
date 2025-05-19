@@ -5,7 +5,7 @@ import os
 import subprocess
 import time
 
-from sense_web.api import start_api
+from sense_web.api.server import start_api
 
 
 @pytest.fixture

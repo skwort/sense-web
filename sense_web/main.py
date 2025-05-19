@@ -9,7 +9,7 @@ from typing import List, Optional, Any
 import logging as log
 
 import sense_web.db as db
-from sense_web.api import start_api
+from sense_web.api.server import start_api
 
 log.basicConfig(level=log.INFO)
 
