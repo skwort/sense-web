@@ -11,6 +11,7 @@ dependencies = [
     "cbor2",
     "sqlalchemy",
     "aiosqlite",
+    "redis",
 ]
 
 [project.optional-dependencies]
@@ -21,7 +22,8 @@ dev = [
     "anyio",
     "httpx",
     "pytest-asyncio",
-    "pytest-cov"
+    "pytest-cov",
+    "fakeredis",
 ]
 
 [build-system]
