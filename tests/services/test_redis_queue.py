@@ -30,13 +30,15 @@ async def test_peek(redis_client: redis.Redis) -> None:
     queue = RedisQueue()
     await queue.init(_client=redis_client)
 
-    item = {"cmd": "ping"}
-    await queue.enqueue("device-123", item)
-    await queue.enqueue("device-123", {"cmd": "status"})
+    item1 = {"cmd": "ping"}
+    item2 = {"cmd": "pong"}
+    await queue.enqueue("device-123", item1)
+    await queue.enqueue("device-123", item2)
 
     peeked = await queue.peek("device-123")
-    assert len(peeked) == 1
-    assert peeked[0] == item
+    assert len(peeked) == 2
+    assert peeked[0] == item1
+    assert peeked[1] == item2
 
 
 @pytest.mark.asyncio
@@ -89,5 +91,4 @@ async def test_peek_without_init_raises() -> None:
 @pytest.mark.asyncio
 async def test_close_without_init_does_not_error() -> None:
     queue = RedisQueue()
-    # Should not raise even if client is None
     await queue.close()

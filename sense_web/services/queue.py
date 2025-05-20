@@ -45,8 +45,20 @@ class RedisQueue:
         if self._client is None:
             raise RuntimeError("RedisQueue not initialised")
 
-        items = await self._client.lrange(self._key(id), 0, 0)  # type: ignore[misc]
+        items = await self._client.lrange(self._key(id), 0, -1)  # type: ignore[misc]
         return [json.loads(i) for i in items]
 
 
 queue = RedisQueue()
+
+
+async def enqueue_command(device_uuid: str, command: dict[str, str]) -> None:
+    await queue.enqueue(device_uuid, command)
+
+
+async def dequeue_command(device_uuid: str) -> dict[str, str] | None:
+    return await queue.dequeue(device_uuid)
+
+
+async def peek_commands(device_uuid: str) -> list[dict[str, str]]:
+    return await queue.peek(device_uuid)
