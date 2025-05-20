@@ -12,7 +12,7 @@ async def redis_client() -> redis.Redis:
 
 
 @pytest.mark.asyncio
-async def test_redis_queue_enqueue_and_dequeue(
+async def test_enqueue_and_dequeue(
     redis_client: redis.Redis,
 ) -> None:
     queue = RedisQueue()
@@ -26,7 +26,7 @@ async def test_redis_queue_enqueue_and_dequeue(
 
 
 @pytest.mark.asyncio
-async def test_redis_queue_peek(redis_client: redis.Redis) -> None:
+async def test_peek(redis_client: redis.Redis) -> None:
     queue = RedisQueue()
     await queue.init(_client=redis_client)
 
@@ -40,7 +40,7 @@ async def test_redis_queue_peek(redis_client: redis.Redis) -> None:
 
 
 @pytest.mark.asyncio
-async def test_redis_queue_peek_empty(redis_client: redis.Redis) -> None:
+async def test_peek_empty(redis_client: redis.Redis) -> None:
     queue = RedisQueue()
     await queue.init(_client=redis_client)
 
@@ -49,7 +49,7 @@ async def test_redis_queue_peek_empty(redis_client: redis.Redis) -> None:
 
 
 @pytest.mark.asyncio
-async def test_redis_queue_dequeue_empty(redis_client: redis.Redis) -> None:
+async def test_dequeue_empty(redis_client: redis.Redis) -> None:
     queue = RedisQueue()
     await queue.init(_client=redis_client)
 
@@ -58,8 +58,36 @@ async def test_redis_queue_dequeue_empty(redis_client: redis.Redis) -> None:
 
 
 @pytest.mark.asyncio
-async def test_redis_queue_close(redis_client: redis.Redis) -> None:
+async def test_close(redis_client: redis.Redis) -> None:
     queue = RedisQueue()
     await queue.init(_client=redis_client)
 
+    await queue.close()
+
+
+@pytest.mark.asyncio
+async def test_enqueue_without_init_raises() -> None:
+    queue = RedisQueue()
+    with pytest.raises(RuntimeError, match="RedisQueue not initialised"):
+        await queue.enqueue("device-123", {"cmd": "test"})
+
+
+@pytest.mark.asyncio
+async def test_dequeue_without_init_raises() -> None:
+    queue = RedisQueue()
+    with pytest.raises(RuntimeError, match="RedisQueue not initialised"):
+        await queue.dequeue("device-123")
+
+
+@pytest.mark.asyncio
+async def test_peek_without_init_raises() -> None:
+    queue = RedisQueue()
+    with pytest.raises(RuntimeError, match="RedisQueue not initialised"):
+        await queue.peek("device-123")
+
+
+@pytest.mark.asyncio
+async def test_close_without_init_does_not_error() -> None:
+    queue = RedisQueue()
+    # Should not raise even if client is None
     await queue.close()
