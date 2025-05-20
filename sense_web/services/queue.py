@@ -4,7 +4,10 @@ import json
 
 
 class RedisQueue:
-    def __init__(
+    def __init__(self) -> None:
+        self._client: redis.Redis | None = None
+
+    async def init(
         self,
         host: str = "localhost",
         port: int = 6379,
@@ -17,22 +20,33 @@ class RedisQueue:
         else:
             self._client = _client
 
+    async def close(self) -> None:
+        if self._client:
+            await self._client.aclose()
+            self._client = None
+
     def _key(self, id: str) -> str:
         return f"queue:{id}"
 
-    async def dequeue(self, id: str) -> Any | None:
-        item = await self._client.lpop(self._key(id))
-        if item is not None:
-            return json.loads(item)
-
-        return None
-
     async def enqueue(self, id: str, item: Any) -> None:
-        await self._client.rpush(self._key(id), json.dumps(item))
+        if self._client is None:
+            raise RuntimeError("RedisQueue not initialised")
 
-    async def peek(self, id: str) -> list[Any]:
-        items = await self._client.lrange(self._key(id), 0, 0)
+        await self._client.rpush(self._key(id), json.dumps(item))  # type: ignore[misc]
+
+    async def dequeue(self, id: str) -> dict[str, str] | None:
+        if self._client is None:
+            raise RuntimeError("RedisQueue not initialised")
+
+        item = await self._client.lpop(self._key(id))  # type: ignore[misc]
+        return json.loads(item) if item else None
+
+    async def peek(self, id: str) -> list[dict[str, str]]:
+        if self._client is None:
+            raise RuntimeError("RedisQueue not initialised")
+
+        items = await self._client.lrange(self._key(id), 0, 0)  # type: ignore[misc]
         return [json.loads(i) for i in items]
 
-    async def close(self) -> None:
-        await self._client.aclose()
+
+queue = RedisQueue()

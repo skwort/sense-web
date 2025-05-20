@@ -12,8 +12,11 @@ async def redis_client() -> redis.Redis:
 
 
 @pytest.mark.asyncio
-async def test_enqueue_and_dequeue(redis_client: redis.Redis) -> None:
-    queue = RedisQueue(_client=redis_client)
+async def test_redis_queue_enqueue_and_dequeue(
+    redis_client: redis.Redis,
+) -> None:
+    queue = RedisQueue()
+    await queue.init(_client=redis_client)
 
     item = {"cmd": "reboot", "ts": 123456}
     await queue.enqueue("device-123", item)
@@ -23,8 +26,9 @@ async def test_enqueue_and_dequeue(redis_client: redis.Redis) -> None:
 
 
 @pytest.mark.asyncio
-async def test_peek(redis_client: redis.Redis) -> None:
-    queue = RedisQueue(_client=redis_client)
+async def test_redis_queue_peek(redis_client: redis.Redis) -> None:
+    queue = RedisQueue()
+    await queue.init(_client=redis_client)
 
     item = {"cmd": "ping"}
     await queue.enqueue("device-123", item)
@@ -36,23 +40,26 @@ async def test_peek(redis_client: redis.Redis) -> None:
 
 
 @pytest.mark.asyncio
-async def test_peek_empty(redis_client: redis.Redis) -> None:
-    queue = RedisQueue(_client=redis_client)
+async def test_redis_queue_peek_empty(redis_client: redis.Redis) -> None:
+    queue = RedisQueue()
+    await queue.init(_client=redis_client)
 
     result = await queue.peek("device-123")
     assert len(result) == 0
 
 
 @pytest.mark.asyncio
-async def test_dequeue_empty(redis_client: redis.Redis) -> None:
-    queue = RedisQueue(_client=redis_client)
+async def test_redis_queue_dequeue_empty(redis_client: redis.Redis) -> None:
+    queue = RedisQueue()
+    await queue.init(_client=redis_client)
 
     result = await queue.dequeue("device-123")
     assert result is None
 
 
 @pytest.mark.asyncio
-async def test_close(redis_client: redis.Redis) -> None:
-    queue = RedisQueue(_client=redis_client)
+async def test_redis_queue_close(redis_client: redis.Redis) -> None:
+    queue = RedisQueue()
+    await queue.init(_client=redis_client)
 
     await queue.close()
