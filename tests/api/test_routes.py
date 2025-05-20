@@ -25,8 +25,8 @@ def api_server() -> Generator[str, None, None]:
         stderr=subprocess.PIPE,
     )
     try:
-        # wait for server to start
-        time.sleep(1)
+        # Wait for server to start
+        time.sleep(2)
         if proc.poll() is not None:
             raise RuntimeError("API server exited prematurely")
         yield f"http://{host}:{port}"

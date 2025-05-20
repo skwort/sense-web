@@ -30,13 +30,14 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-addopts = "--cov=sense_web --cov-report=html"
+addopts = "--cov=sense_web --cov-report=html --cov-config=pyproject.toml"
 
 [tool.coverage.run]
 branch = true
 parallel = true
 source = ["sense_web"]
-
+concurrency = ["thread","greenlet"]
+sigterm = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["sense_web"]
