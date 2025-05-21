@@ -10,6 +10,10 @@ from sense_web.services.device import (
     get_device_by_imei,
     get_device_by_uuid,
 )
+from sense_web.services.queue import (
+    peek_commands,
+    enqueue_command,
+)
 
 router = APIRouter()
 
@@ -22,6 +26,16 @@ class DeviceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     imei: str
     uuid: UUID
+
+
+class CommandRequest(BaseModel):
+    cmd: str
+    timestamp: int
+
+
+class CommandResponse(BaseModel):
+    cmd: str
+    timestamp: int
 
 
 @router.post(
@@ -75,3 +89,32 @@ async def devices_by_imei(imei: str) -> DeviceResponse:
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
     return DeviceResponse.model_validate(device)
+
+
+@router.post(
+    "/devices/{uuid}/commands",
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def commands_post(uuid: UUID, request: CommandRequest) -> None:
+    device = await get_device_by_uuid(uuid)
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    await enqueue_command(str(uuid), request.model_dump())
+
+
+@router.get(
+    "/devices/{uuid}/commands",
+    response_model=list[CommandResponse] | None,
+    status_code=status.HTTP_200_OK,
+)
+async def commands_get(uuid: UUID) -> list[CommandResponse] | None:
+    device = await get_device_by_uuid(uuid)
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    commands = await peek_commands(str(uuid))
+    if len(commands) == 0:
+        return []
+
+    return [CommandResponse.model_validate(c) for c in commands]

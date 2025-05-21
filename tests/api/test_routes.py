@@ -4,6 +4,8 @@ import httpx
 import os
 import subprocess
 import time
+import uuid
+from testcontainers.redis import RedisContainer
 
 from sense_web.db.session import sessionmanager
 from sense_web.api.server import start_api
@@ -17,6 +19,14 @@ def api_server() -> Generator[str, None, None]:
     host = "127.0.0.1"
     port = 6789
 
+    redis = RedisContainer().with_exposed_ports(6379)
+    redis.start()
+
+    os.environ["REDIS_HOST"] = redis.get_container_host_ip()
+    os.environ["REDIS_PORT"] = redis.get_exposed_port(6379)
+
+    time.sleep(1)
+
     proc = start_api(
         host=host,
         port=port,
@@ -24,6 +34,7 @@ def api_server() -> Generator[str, None, None]:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+
     try:
         # Wait for server to start
         time.sleep(2)
@@ -31,6 +42,7 @@ def api_server() -> Generator[str, None, None]:
             raise RuntimeError("API server exited prematurely")
         yield f"http://{host}:{port}"
     finally:
+        redis.stop()
         proc.terminate()
         try:
             proc.wait(timeout=5)
@@ -168,3 +180,47 @@ def test_api_device_get_by_imei_not_found(
 
         assert response.status_code == 404
         assert response.json()["detail"] == "Device not found"
+
+
+def test_api_commands_post_get(api_server: str, db_manager: None) -> None:
+    with httpx.Client(base_url=api_server) as client:
+        data = {"imei": "200000000000001"}
+        register_response = client.post("/api/devices", json=data, timeout=2)
+
+        assert register_response.status_code == 201
+        uuid = register_response.json()["uuid"]
+
+        commands_list = client.get(f"/api/devices/{uuid}/commands", timeout=2)
+        assert commands_list.status_code == 200
+        assert len(commands_list.json()) == 0
+
+        command = {"cmd": "test", "timestamp": 1234}
+        command_response = client.post(
+            f"/api/devices/{uuid}/commands", json=command, timeout=2
+        )
+        assert command_response.status_code == 202
+
+        commands_list = client.get(f"/api/devices/{uuid}/commands", timeout=2)
+        assert commands_list.status_code == 200
+        assert commands_list.json()[0] == command
+
+
+def test_api_commands_post_not_found(
+    api_server: str, db_manager: None
+) -> None:
+    with httpx.Client(base_url=api_server) as client:
+        device_uuid = uuid.uuid4()
+        command = {"cmd": "test", "timestamp": 1234}
+        command_response = client.post(
+            f"/api/devices/{device_uuid}/commands", json=command, timeout=2
+        )
+        assert command_response.status_code == 404
+
+
+def test_api_commands_get_not_found(api_server: str, db_manager: None) -> None:
+    with httpx.Client(base_url=api_server) as client:
+        device_uuid = uuid.uuid4()
+        command_response = client.get(
+            f"/api/devices/{device_uuid}/commands", timeout=2
+        )
+        assert command_response.status_code == 404

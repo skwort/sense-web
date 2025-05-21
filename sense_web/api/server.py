@@ -7,8 +7,11 @@ from fastapi import FastAPI, APIRouter
 from .routes import root, devices
 
 from sense_web.db.session import sessionmanager
+from sense_web.services.queue import queue
 
 DB_URI = os.getenv("DATABASE_URI", "sqlite+aiosqlite:///./dev.db")
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 
 api_router = APIRouter()
 api_router.include_router(root.router)
@@ -19,9 +22,11 @@ def init_api() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await sessionmanager.init(DB_URI)
+        await queue.init(host=REDIS_HOST, port=REDIS_PORT)
         yield
         if sessionmanager._engine is not None:
             await sessionmanager.close()
+        await queue.close()
 
     api = FastAPI(title="SENSE Web - CoAP-HTTP Gateway", lifespan=lifespan)
     api.include_router(api_router, prefix="/api")

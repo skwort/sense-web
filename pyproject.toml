@@ -24,6 +24,7 @@ dev = [
     "pytest-asyncio",
     "pytest-cov",
     "fakeredis",
+    "testcontainers[redis]",
 ]
 
 [build-system]
