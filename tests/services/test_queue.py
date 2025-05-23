@@ -4,7 +4,7 @@ import redis.asyncio as redis
 import fakeredis
 
 from sense_web.services.queue import (
-    queue,
+    ipc,
     enqueue_command,
     dequeue_command,
     peek_commands,
@@ -18,7 +18,7 @@ async def redis_client() -> redis.Redis:
 
 @pytest.mark.asyncio
 async def test_enqueue_and_dequeue_command(redis_client: redis.Redis) -> None:
-    await queue.init(_client=redis_client)
+    await ipc.init(_backend=redis_client)
 
     device_id = "device-abc"
     command = {"cmd": "reboot", "ts": "123456"}
@@ -31,7 +31,7 @@ async def test_enqueue_and_dequeue_command(redis_client: redis.Redis) -> None:
 
 @pytest.mark.asyncio
 async def test_peek_commands(redis_client: redis.Redis) -> None:
-    await queue.init(_client=redis_client)
+    await ipc.init(_backend=redis_client)
 
     device_id = "device-xyz"
     command1 = {"cmd": "ping"}
@@ -48,7 +48,7 @@ async def test_peek_commands(redis_client: redis.Redis) -> None:
 
 
 async def test_peek_commands_empty(redis_client: redis.Redis) -> None:
-    await queue.init(_client=redis_client)
+    await ipc.init(_backend=redis_client)
 
     peeked = await peek_commands("non-existent")
 
