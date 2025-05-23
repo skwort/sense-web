@@ -3,7 +3,7 @@ import pytest
 import pytest_asyncio
 import fakeredis
 
-from sense_web.services.queue import IPC
+from sense_web.services.ipc import IPC
 
 
 @pytest_asyncio.fixture

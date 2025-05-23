@@ -7,7 +7,7 @@ from fastapi import FastAPI, APIRouter
 from .routes import root, devices
 
 from sense_web.db.session import sessionmanager
-from sense_web.services.queue import ipc
+from sense_web.services.ipc import ipc
 
 DB_URI = os.getenv("DATABASE_URI", "sqlite+aiosqlite:///./dev.db")
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")

@@ -10,7 +10,7 @@ from sense_web.services.device import (
     get_device_by_imei,
     get_device_by_uuid,
 )
-from sense_web.services.queue import (
+from sense_web.services.ipc import (
     peek_commands,
     enqueue_command,
 )

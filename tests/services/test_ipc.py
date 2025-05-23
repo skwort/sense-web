@@ -3,7 +3,7 @@ import pytest_asyncio
 import redis.asyncio as redis
 import fakeredis
 
-from sense_web.services.queue import (
+from sense_web.services.ipc import (
     ipc,
     enqueue_command,
     dequeue_command,
