@@ -1,3 +1,5 @@
+import asyncio
+import json
 import pytest
 import pytest_asyncio
 import redis.asyncio as redis
@@ -138,3 +140,60 @@ async def test_peek_commands_empty(ipc_backend: redis.Redis) -> None:
 
     assert peeked is not None
     assert len(peeked) == 0
+
+
+async def test_publish_subscribe_unsubscribe(ipc_backend: redis.Redis) -> None:
+    ipc_instance = IPC()
+    await ipc_instance.init(_backend=ipc_backend)
+
+    received: asyncio.Queue[str] = asyncio.Queue()
+
+    async def callback(message: str) -> None:
+        await received.put(message)
+
+    channel = "test-channel"
+    await ipc_instance.subscribe(channel, callback)
+    await asyncio.sleep(0.1)
+
+    msg = "hello"
+    await ipc_instance.publish(channel, msg)
+
+    # Wait for callback to be triggered
+    result = await asyncio.wait_for(received.get(), timeout=2.0)
+    assert result == msg
+
+    await ipc_instance.unsubscribe(channel)
+
+    await ipc_instance.close()
+
+
+async def test_unsubscribe_not_subscribed_passes(
+    ipc_backend: redis.Redis,
+) -> None:
+    ipc_instance = IPC()
+    await ipc_instance.init(_backend=ipc_backend)
+
+    await ipc_instance.unsubscribe("test")
+
+    await ipc_instance.close()
+
+
+@pytest.mark.asyncio
+async def test_publish_uninitialised_raises(ipc_backend: redis.Redis) -> None:
+    ipc_instance = IPC()
+
+    async def callback(message: str) -> None:
+        pass
+
+    with pytest.raises(RuntimeError, match="IPC not initialised"):
+        await ipc_instance.subscribe("test", callback)
+
+
+@pytest.mark.asyncio
+async def test_subscribe_uninitialised_raises(
+    ipc_backend: redis.Redis,
+) -> None:
+    ipc_instance = IPC()
+
+    with pytest.raises(RuntimeError, match="IPC not initialised"):
+        await ipc_instance.publish("test", "msg")

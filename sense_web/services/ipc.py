@@ -1,4 +1,5 @@
-from typing import Any
+import asyncio
+from typing import Any, Callable
 import redis.asyncio as redis
 import json
 
@@ -6,6 +7,8 @@ import json
 class IPC:
     def __init__(self) -> None:
         self._backend: redis.Redis | None = None
+        self._pubsub: redis.client.PubSub | None = None
+        self._subscriber_tasks: dict[str, asyncio.Task[Any]] = {}
 
     async def init(
         self,
@@ -19,6 +22,8 @@ class IPC:
             )
         else:
             self._backend = _backend
+
+        self._pubsub = self._backend.pubsub()  # type: ignore[union-attr]
 
     async def close(self) -> None:
         if self._backend:
@@ -47,6 +52,39 @@ class IPC:
 
         items = await self._backend.lrange(self._key(id), 0, -1)  # type: ignore[misc]
         return [json.loads(i) for i in items]
+
+    async def publish(self, channel: str, message: str) -> None:
+        if self._backend is None:
+            raise RuntimeError("IPC not initialised")
+
+        await self._backend.publish(channel, message)
+
+    async def subscribe(
+        self, channel: str, callback: Callable[[str], Any]
+    ) -> None:
+        if self._pubsub is None:
+            raise RuntimeError("IPC not initialised")
+
+        async def _listener() -> None:
+            if self._pubsub is None:
+                raise RuntimeError("IPC not initialised")
+
+            await self._pubsub.subscribe(channel)
+            async for msg in self._pubsub.listen():
+                if msg["type"] == "message":
+                    await callback(msg["data"])
+
+        task = asyncio.create_task(_listener())
+        self._subscriber_tasks[channel] = task
+
+    async def unsubscribe(self, channel: str) -> None:
+        task = self._subscriber_tasks.pop(channel, None)
+        if task:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
 
 ipc = IPC()
