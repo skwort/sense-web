@@ -30,20 +30,20 @@ class IPC:
 
     async def enqueue(self, id: str, item: Any) -> None:
         if self._backend is None:
-            raise RuntimeError("RedisQueue not initialised")
+            raise RuntimeError("IPC not initialised")
 
         await self._backend.rpush(self._key(id), json.dumps(item))  # type: ignore[misc]
 
     async def dequeue(self, id: str) -> dict[str, str] | None:
         if self._backend is None:
-            raise RuntimeError("RedisQueue not initialised")
+            raise RuntimeError("IPC not initialised")
 
         item = await self._backend.lpop(self._key(id))  # type: ignore[misc]
         return json.loads(item) if item else None
 
     async def peek(self, id: str) -> list[dict[str, str]]:
         if self._backend is None:
-            raise RuntimeError("RedisQueue not initialised")
+            raise RuntimeError("IPC not initialised")
 
         items = await self._backend.lrange(self._key(id), 0, -1)  # type: ignore[misc]
         return [json.loads(i) for i in items]
