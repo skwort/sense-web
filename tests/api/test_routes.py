@@ -5,10 +5,12 @@ import os
 import subprocess
 import time
 import uuid
+import asyncio
 from testcontainers.redis import RedisContainer
 
 from sense_web.db.session import sessionmanager
 from sense_web.api.server import start_api
+from sense_web.services.ipc import ipc, PubSubChannels
 
 DB_URI = "sqlite+aiosqlite:///pytest.db"
 os.environ["DATABASE_URI"] = DB_URI
@@ -71,17 +73,37 @@ def test_api_root_get(
         assert response.status_code == 200
 
 
-def test_api_device_register_ok(api_server: str, db_manager: None) -> None:
+async def test_api_device_register_ok(
+    api_server: str, db_manager: None
+) -> None:
+    await ipc.init(
+        host=os.environ["REDIS_HOST"], port=int(os.environ["REDIS_PORT"])
+    )
+
+    received: asyncio.Queue[str] = asyncio.Queue()
+
+    async def callback(message: str) -> None:
+        await received.put(message)
+
+    await ipc.subscribe(PubSubChannels.DEVICE_REGISTRATION.value, callback)
+    await asyncio.sleep(0.1)
+
     with httpx.Client(base_url=api_server) as client:
         data = {"imei": "123456789"}
 
         response = client.post("/api/devices", json=data, timeout=2)
+        true_uuid = response.json()["uuid"]
 
         assert response.status_code == 201
 
         json = response.json()
         assert json.get("imei", "") == data["imei"]
         assert json.get("uuid") is not None or ""
+
+        pubsub_uuid = await asyncio.wait_for(received.get(), timeout=2.0)
+        assert true_uuid == pubsub_uuid
+
+    await ipc.close()
 
 
 def test_api_device_register_already_exists(

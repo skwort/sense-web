@@ -11,6 +11,8 @@ from sense_web.services.device import (
     get_device_by_uuid,
 )
 from sense_web.services.ipc import (
+    ipc,
+    PubSubChannels,
     peek_commands,
     enqueue_command,
 )
@@ -53,6 +55,10 @@ async def register(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(e),
         )
+
+    await ipc.publish(
+        PubSubChannels.DEVICE_REGISTRATION.value, str(device.uuid)
+    )
 
     return DeviceResponse(imei=device.imei, uuid=device.uuid)
 

@@ -1,7 +1,12 @@
 import asyncio
+from enum import Enum
 from typing import Any, Callable
 import redis.asyncio as redis
 import json
+
+
+class PubSubChannels(Enum):
+    DEVICE_REGISTRATION = "reg"
 
 
 class IPC:
