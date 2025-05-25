@@ -8,6 +8,7 @@ from typing import List, Optional, Any
 import logging as log
 
 from sense_web.api.server import start_api
+from sense_web.coap.server import start_coap
 
 log.basicConfig(level=log.INFO)
 
@@ -39,6 +40,16 @@ if __name__ == "__main__":
     )
 
     procs.append(api_proc)
+
+    coap_proc = start_coap(
+        "0.0.0.0",
+        6873,
+        env=dict(os.environ),
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+    )
+
+    procs.append(coap_proc)
 
     signal.signal(signal.SIGINT, shutdown_handler)
     signal.signal(signal.SIGTERM, shutdown_handler)
