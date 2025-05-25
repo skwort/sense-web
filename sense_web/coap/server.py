@@ -117,7 +117,15 @@ async def main() -> None:
         )
 
     await Context.create_server_context(state.coap_site)
-    await asyncio.get_running_loop().create_future()
+
+    try:
+        await asyncio.get_running_loop().create_future()
+    except asyncio.CancelledError:
+        log.info("CoAP server shutting down cleanly.")
+
+    await sessionmanager.close()
+    await ipc.unsubscribe(PubSubChannels.DEVICE_REGISTRATION.value)
+    await ipc.close()
 
 
 if __name__ == "__main__":
