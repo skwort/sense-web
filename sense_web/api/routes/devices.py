@@ -22,12 +22,14 @@ router = APIRouter()
 
 class DeviceRegistrationRequest(BaseModel):
     imei: str
+    name: str
 
 
 class DeviceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     imei: str
     uuid: UUID
+    name: str
 
 
 class CommandRequest(BaseModel):
@@ -49,7 +51,7 @@ async def register(
     request: DeviceRegistrationRequest,
 ) -> DeviceResponse:
     try:
-        device = await register_device(request.imei)
+        device = await register_device(request.imei, request.name)
     except DeviceAlreadyExists as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -60,7 +62,7 @@ async def register(
         PubSubChannels.DEVICE_REGISTRATION.value, str(device.uuid)
     )
 
-    return DeviceResponse(imei=device.imei, uuid=device.uuid)
+    return DeviceResponse.model_validate(device)
 
 
 @router.get(

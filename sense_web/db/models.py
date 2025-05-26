@@ -21,6 +21,7 @@ class Device(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     imei: Mapped[str] = mapped_column(String, unique=True, index=True)
     uuid: Mapped[str] = mapped_column(Uuid(), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String)
 
     def __repr__(self) -> str:
         return (
@@ -28,5 +29,6 @@ class Device(Base):
             f"  id={self.id!r}),\n"
             f"  imei={self.imei!r},\n"
             f"  uuid={self.uuid!r}\n"
+            f"  name={self.name!r}\n"
             f")"
         )

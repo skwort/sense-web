@@ -18,7 +18,7 @@
             {% for device in devices %}
             <tr>
                 <td><a href="/devices/{{ device.uuid }}">{{ device.uuid }}</a></td>
-                <td>Placeholder</td>
+                <td>{{ device.name }}</td>
                 <td>Placeholder</td>
                 <td>Placeholder</td>
             </tr>
@@ -29,6 +29,7 @@
     <h3>Register New Device</h3>
     <form hx-post="/api/devices" hx-ext="json-enc" hx-swap="none" hx-on::after-request="location.reload();">
         <input type="text" name="imei" placeholder="Enter IMEI" />
+        <input type="text" name="name" placeholder="Enter name" />
         <button type="submit">Send</button>
     </form>
 

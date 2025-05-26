@@ -20,7 +20,8 @@ def db_session() -> Generator[Session, None, None]:
 def test_create_device(db_session: Session) -> None:
     imei = "123456789012345"
     device_uuid = uuid.uuid4()
-    device = Device(imei=imei, uuid=device_uuid)
+    name = "device_name"
+    device = Device(imei=imei, uuid=device_uuid, name=name)
 
     db_session.add(device)
     db_session.commit()
@@ -28,11 +29,12 @@ def test_create_device(db_session: Session) -> None:
     assert device.id is not None
     assert device.imei == imei
     assert str(device.uuid) == str(device_uuid)
+    assert device.name == name
 
 
 def test_unique_imei_constraint(db_session: Session) -> None:
-    device1 = Device(imei="123456789012345", uuid=uuid.uuid4())
-    device2 = Device(imei="123456789012345", uuid=uuid.uuid4())
+    device1 = Device(imei="123456789012345", uuid=uuid.uuid4(), name="d1")
+    device2 = Device(imei="123456789012345", uuid=uuid.uuid4(), name="d2")
 
     db_session.add(device1)
     db_session.commit()
@@ -44,8 +46,8 @@ def test_unique_imei_constraint(db_session: Session) -> None:
 
 def test_unique_uuid_constraint(db_session: Session) -> None:
     fixed_uuid = uuid.uuid4()
-    device1 = Device(imei="123456789012345", uuid=fixed_uuid)
-    device2 = Device(imei="543210987654321", uuid=fixed_uuid)
+    device1 = Device(imei="123456789012345", uuid=fixed_uuid, name="d1")
+    device2 = Device(imei="543210987654321", uuid=fixed_uuid, name="d2")
 
     db_session.add(device1)
     db_session.commit()
@@ -56,7 +58,7 @@ def test_unique_uuid_constraint(db_session: Session) -> None:
 
 
 def test_missing_imei_raises(db_session: Session) -> None:
-    device = Device(imei=None, uuid=uuid.uuid4())
+    device = Device(imei=None, uuid=uuid.uuid4(), name="d1")
     db_session.add(device)
     with pytest.raises(IntegrityError):
         db_session.commit()
@@ -64,7 +66,7 @@ def test_missing_imei_raises(db_session: Session) -> None:
 
 def test_get_device_by_imei(db_session: Session) -> None:
     imei = "123456789012345"
-    device = Device(imei=imei, uuid=uuid.uuid4())
+    device = Device(imei=imei, uuid=uuid.uuid4(), name="d1")
     db_session.add(device)
     db_session.commit()
 
@@ -75,7 +77,7 @@ def test_get_device_by_imei(db_session: Session) -> None:
 
 def test_get_device_by_uuid(db_session: Session) -> None:
     device_uuid = uuid.uuid4()
-    device = Device(imei="123456789012345", uuid=device_uuid)
+    device = Device(imei="123456789012345", uuid=device_uuid, name="d1")
     db_session.add(device)
     db_session.commit()
 
@@ -87,7 +89,7 @@ def test_get_device_by_uuid(db_session: Session) -> None:
 
 
 def test_update_device_imei(db_session: Session) -> None:
-    device = Device(imei="123456789012345", uuid=uuid.uuid4())
+    device = Device(imei="123456789012345", uuid=uuid.uuid4(), name="d1")
     db_session.add(device)
     db_session.commit()
 
@@ -99,7 +101,7 @@ def test_update_device_imei(db_session: Session) -> None:
 
 
 def test_delete_device(db_session: Session) -> None:
-    device = Device(imei="123456789012345", uuid=uuid.uuid4())
+    device = Device(imei="123456789012345", uuid=uuid.uuid4(), name="d1")
     db_session.add(device)
     db_session.commit()
 

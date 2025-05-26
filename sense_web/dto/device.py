@@ -7,3 +7,4 @@ class DeviceDTO(BaseModel):
 
     uuid: UUID
     imei: str
+    name: str

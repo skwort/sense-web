@@ -28,11 +28,13 @@ async def test_register_and_get_device(
     db_manager: DatabaseSessionManager,
 ) -> None:
     imei = "123456789012345"
-    await register_device(imei)
+    name = "d0"
+    await register_device(imei, name)
 
     device = await get_device_by_imei(imei)
     assert device is not None
     assert device.imei == imei
+    assert device.name == name
 
     device_by_uuid = await get_device_by_uuid(device.uuid)
     assert device_by_uuid is not None
@@ -44,21 +46,23 @@ async def test_register_twice_fail(
     db_manager: DatabaseSessionManager,
 ) -> None:
     imei = "123456789012345"
-    await register_device(imei)
+    name = "d0"
+    await register_device(imei, name)
 
     device = await get_device_by_imei(imei)
     assert device is not None
     assert device.imei == imei
+    assert device.name == name
 
     with pytest.raises(DeviceAlreadyExists):
-        await register_device(imei)
+        await register_device(imei, name)
 
 
 @pytest.mark.asyncio
 async def test_list_devices(db_manager: DatabaseSessionManager) -> None:
     imeis = ["111", "222", "333"]
-    for imei in imeis:
-        await register_device(imei)
+    for i, imei in enumerate(imeis):
+        await register_device(imei, str(i))
 
     devices = await list_devices()
     assert len(devices) == len(imeis)

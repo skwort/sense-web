@@ -70,7 +70,7 @@ def coap_server() -> Generator[None, None, None]:
 
 @pytest.mark.asyncio
 async def test_device_resource(coap_server: None, db_manager: None) -> None:
-    device = await register_device("12345")
+    device = await register_device("12345", "d1")
     uuid = device.uuid
 
     await ipc.init(
@@ -98,7 +98,7 @@ async def test_device_resource(coap_server: None, db_manager: None) -> None:
 async def test_get_delete_device_command_resource(
     coap_server: None, db_manager: None
 ) -> None:
-    device = await register_device("12345")
+    device = await register_device("12345", "d1")
     uuid = str(device.uuid)
 
     await ipc.init(
@@ -135,7 +135,7 @@ async def test_get_delete_device_command_resource(
 async def test_get_device_command_resource_empty(
     coap_server: None, db_manager: None
 ) -> None:
-    device = await register_device("12345")
+    device = await register_device("12345", "d1")
     uuid = str(device.uuid)
 
     await ipc.init(
@@ -161,7 +161,7 @@ async def test_get_device_command_resource_empty(
 async def test_delete_device_command_resource_empty(
     coap_server: None, db_manager: None
 ) -> None:
-    device = await register_device("12345")
+    device = await register_device("12345", "d1")
     uuid = str(device.uuid)
 
     await ipc.init(

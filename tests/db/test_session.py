@@ -58,8 +58,9 @@ async def test_session_manager_commit(
 
     # Create and add a device
     imei = "123456789012345"
+    name = "d0"
     device_uuid = uuid.uuid4()
-    device = Device(imei=imei, uuid=device_uuid)
+    device = Device(imei=imei, uuid=device_uuid, name=name)
 
     async with db_manager.session() as session:
         session.add(device)
@@ -72,6 +73,7 @@ async def test_session_manager_commit(
         )
         assert result is not None
         assert result.imei == imei
+        assert result.name == name
         assert str(result.uuid) == str(device_uuid)
 
 

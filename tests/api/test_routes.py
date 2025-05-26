@@ -89,7 +89,7 @@ async def test_api_device_register_ok(
     await asyncio.sleep(0.1)
 
     with httpx.Client(base_url=api_server) as client:
-        data = {"imei": "123456789"}
+        data = {"imei": "123456789", "name": "d1"}
 
         response = client.post("/api/devices", json=data, timeout=2)
         true_uuid = response.json()["uuid"]
@@ -98,6 +98,7 @@ async def test_api_device_register_ok(
 
         json = response.json()
         assert json.get("imei", "") == data["imei"]
+        assert json.get("name", "") == data["name"]
         assert json.get("uuid") is not None or ""
 
         pubsub_uuid = await asyncio.wait_for(received.get(), timeout=2.0)
@@ -110,7 +111,7 @@ def test_api_device_register_already_exists(
     api_server: str, db_manager: None
 ) -> None:
     with httpx.Client(base_url=api_server) as client:
-        data = {"imei": "123456789"}
+        data = {"imei": "123456789", "name": "d1"}
 
         response = client.post("/api/devices", json=data, timeout=2)
 
@@ -118,6 +119,7 @@ def test_api_device_register_already_exists(
 
         json = response.json()
         assert json.get("imei", "") == data["imei"]
+        assert json.get("name", "") == data["name"]
         assert json.get("uuid") is not None or ""
 
         response = client.post("/api/devices", json=data, timeout=2)
@@ -128,8 +130,8 @@ def test_api_device_register_already_exists(
 def test_api_device_list_all(api_server: str, db_manager: None) -> None:
     with httpx.Client(base_url=api_server) as client:
         # Register two devices
-        device1 = {"imei": "100000000000001"}
-        device2 = {"imei": "100000000000002"}
+        device1 = {"imei": "100000000000001", "name": "d1"}
+        device2 = {"imei": "100000000000002", "name": "d2"}
 
         res1 = client.post("/api/devices", json=device1, timeout=2)
         res2 = client.post("/api/devices", json=device2, timeout=2)
@@ -152,7 +154,7 @@ def test_api_device_list_all(api_server: str, db_manager: None) -> None:
 
 def test_api_device_get_by_uuid(api_server: str, db_manager: None) -> None:
     with httpx.Client(base_url=api_server) as client:
-        data = {"imei": "200000000000001"}
+        data = {"imei": "200000000000001", "name": "d1"}
         register_response = client.post("/api/devices", json=data, timeout=2)
 
         assert register_response.status_code == 201
@@ -163,12 +165,13 @@ def test_api_device_get_by_uuid(api_server: str, db_manager: None) -> None:
         assert response.status_code == 200
         device = response.json()
         assert device["imei"] == data["imei"]
+        assert device["name"] == data["name"]
         assert device["uuid"] == uuid
 
 
 def test_api_device_get_by_imei(api_server: str, db_manager: None) -> None:
     with httpx.Client(base_url=api_server) as client:
-        data = {"imei": "200000000000002"}
+        data = {"imei": "200000000000002", "name": "d1"}
         register_response = client.post("/api/devices", json=data, timeout=2)
 
         assert register_response.status_code == 201
@@ -179,6 +182,7 @@ def test_api_device_get_by_imei(api_server: str, db_manager: None) -> None:
         assert response.status_code == 200
         device = response.json()
         assert device["imei"] == data["imei"]
+        assert device["name"] == data["name"]
         assert device["uuid"] == uuid
 
 
@@ -206,7 +210,7 @@ def test_api_device_get_by_imei_not_found(
 
 def test_api_commands_post_get(api_server: str, db_manager: None) -> None:
     with httpx.Client(base_url=api_server) as client:
-        data = {"imei": "200000000000001"}
+        data = {"imei": "200000000000001", "name": "d1"}
         register_response = client.post("/api/devices", json=data, timeout=2)
 
         assert register_response.status_code == 201

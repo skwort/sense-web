@@ -4,11 +4,12 @@
 
 {% block content %}
 <div class="childContainer">
-    <h2>Device {{ device.uuid }}</h2>
+    <h2>Device: {{ device.uuid }}</h2>
 
     <div class="flex-row">
         <div class="flex-col">
             <h3>Device Details</h3>
+            <p><strong>Name:</strong> {{ device.name }}</p>
             <p><strong>UUID:</strong> {{ device.uuid }}</p>
             <p><strong>IMEI:</strong> {{ device.imei }}</p>
         </div>

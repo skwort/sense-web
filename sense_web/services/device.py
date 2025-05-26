@@ -7,7 +7,7 @@ from sense_web.db.session import sessionmanager
 from sense_web.dto.device import DeviceDTO
 
 
-async def register_device(imei: str) -> DeviceDTO:
+async def register_device(imei: str, name: str) -> DeviceDTO:
     async with sessionmanager.session() as session:
         stmt = select(Device).where(Device.imei == imei)
         existing = (await session.execute(stmt)).scalars().first()
@@ -16,7 +16,7 @@ async def register_device(imei: str) -> DeviceDTO:
                 f"Device with IMEI {imei} already exists."
             )
         device_uuid = uuid.uuid4()
-        device = Device(imei=imei, uuid=device_uuid)
+        device = Device(imei=imei, uuid=device_uuid, name=name)
         device_dto = DeviceDTO.model_validate(device)
         session.add(device)
         await session.commit()
