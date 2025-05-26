@@ -16,7 +16,7 @@ procs: List[subprocess.Popen[Any]] = []
 
 
 def shutdown_handler(sig: int, frame: Optional[FrameType]) -> None:
-    log.info("Shutting down...")
+    log.info("Supervisor shutting down...")
 
     for proc in procs:
         if proc.poll() is None:
@@ -30,7 +30,6 @@ def shutdown_handler(sig: int, frame: Optional[FrameType]) -> None:
 
 
 if __name__ == "__main__":
-    # Start the REST API
     api_proc = start_api(
         "0.0.0.0",
         8000,
@@ -43,7 +42,7 @@ if __name__ == "__main__":
 
     coap_proc = start_coap(
         "0.0.0.0",
-        6873,
+        5683,
         env=dict(os.environ),
         stdout=sys.stdout,
         stderr=sys.stderr,

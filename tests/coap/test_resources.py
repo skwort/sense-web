@@ -37,8 +37,8 @@ async def db_manager() -> AsyncGenerator[None]:
 
 @pytest.fixture(scope="module")
 def coap_server() -> Generator[None, None, None]:
-    host = "127.0.0.1"
-    port = 6789
+    host = "0.0.0.0"
+    port = 5683
 
     redis = RedisContainer().with_exposed_ports(6379)
     redis.start()
@@ -85,7 +85,7 @@ async def test_device_resource(coap_server: None, db_manager: None) -> None:
 
     protocol = await Context.create_client_context()
 
-    request = Message(code=Code.GET, uri=f"coap://localhost/{str(uuid)}")
+    request = Message(code=Code.GET, uri=f"coap://127.0.0.1/{str(uuid)}")
     response = await protocol.request(request).response
 
     assert response.code.is_successful()
@@ -114,14 +114,14 @@ async def test_get_delete_device_command_resource(
 
     protocol = await Context.create_client_context()
 
-    request = Message(code=Code.GET, uri=f"coap://localhost/{uuid}/commands")
+    request = Message(code=Code.GET, uri=f"coap://127.0.0.1/{uuid}/commands")
     response = await protocol.request(request).response
 
     assert response.code.is_successful()
     assert json.loads(response.payload) == cmd
 
     request = Message(
-        code=Code.DELETE, uri=f"coap://localhost/{uuid}/commands"
+        code=Code.DELETE, uri=f"coap://127.0.0.1/{uuid}/commands"
     )
     response = await protocol.request(request).response
 
@@ -148,7 +148,7 @@ async def test_get_device_command_resource_empty(
 
     protocol = await Context.create_client_context()
 
-    request = Message(code=Code.GET, uri=f"coap://localhost/{uuid}/commands")
+    request = Message(code=Code.GET, uri=f"coap://127.0.0.1/{uuid}/commands")
     response = await protocol.request(request).response
 
     assert response.code.is_successful()
@@ -175,7 +175,7 @@ async def test_delete_device_command_resource_empty(
     protocol = await Context.create_client_context()
 
     request = Message(
-        code=Code.DELETE, uri=f"coap://localhost/{uuid}/commands"
+        code=Code.DELETE, uri=f"coap://127.0.0.1/{uuid}/commands"
     )
     response = await protocol.request(request).response
 

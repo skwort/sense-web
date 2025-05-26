@@ -1,3 +1,4 @@
+import argparse
 import os
 import uuid
 import asyncio
@@ -36,6 +37,10 @@ def start_coap(
         [
             sys.executable,
             "sense_web/coap/server.py",
+            "--ip",
+            host,
+            "--port",
+            str(port),
         ],
         env=env,
         stdout=stdout,
@@ -94,7 +99,7 @@ async def device_registration_callback(device: str) -> None:
     )
 
 
-async def main() -> None:
+async def main(server_ip: str, server_port: int) -> None:
     await sessionmanager.init(DB_URI)
     await ipc.init(host=REDIS_HOST, port=REDIS_PORT)
 
@@ -116,7 +121,11 @@ async def main() -> None:
             [str(d.uuid), "commands"], DeviceCommandResource(d.uuid)
         )
 
-    await Context.create_server_context(state.coap_site)
+    await Context.create_server_context(
+        state.coap_site,
+        bind=(server_ip, server_port),
+        transports=["udp6"],
+    )
 
     try:
         await asyncio.get_running_loop().create_future()
@@ -129,4 +138,24 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="SENSE Web CoAP Server")
+    parser.add_argument(
+        "--ip",
+        default="127.0.0.1",
+        type=str,
+        help="The IP the CoAP server will bind to",
+    )
+    parser.add_argument(
+        "--port",
+        default=5683,
+        type=int,
+        help=(
+            "The port the CoAP server will listen on. Note that the server "
+            "uses the udp6 based transport, which is interoperable with both "
+            "IPv4 and IPv6 requests."
+        ),
+    )
+
+    args = parser.parse_args()
+
+    asyncio.run(main(server_ip=args.ip, server_port=args.port))
