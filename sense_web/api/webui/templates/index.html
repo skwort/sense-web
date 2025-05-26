@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Device List{% endblock %}
+
+{% block content %}
+<h2>Registered Devices</h2>
+<table>
+    <thead>
+        <tr>
+            <th>UUID</th>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Last Seen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for device in devices %}
+        <tr>
+            <td><a href="/devices/{{ device.uuid }}">{{ device.uuid }}</a></td>
+            <td>Placeholder</td>
+            <td>Placeholder</td>
+            <td>Placeholder</td>
+            <td></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -4,7 +4,7 @@ import subprocess
 from typing import IO, Dict, AsyncIterator, Any
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter
-from .routes import root, devices
+from .routes import root, devices, webui
 
 from sense_web.db.session import sessionmanager
 from sense_web.services.ipc import ipc
@@ -18,7 +18,7 @@ api_router.include_router(root.router)
 api_router.include_router(devices.router)
 
 
-def init_api() -> FastAPI:
+def init_api(use_webui: bool = True) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await sessionmanager.init(DB_URI)
@@ -30,6 +30,9 @@ def init_api() -> FastAPI:
 
     api = FastAPI(title="SENSE Web - CoAP-HTTP Gateway", lifespan=lifespan)
     api.include_router(api_router, prefix="/api")
+
+    if use_webui:
+        api.include_router(webui.router)
 
     return api
 
