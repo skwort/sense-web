@@ -4,11 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}SENSE Web{% endblock %}</title>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 
 <body>
-    <h1>SENSE Web</h1>
-    {% block content %}{% endblock %}
+    <div class="container">
+        <h1>SENSE Web</h1>
+        {% block content %}{% endblock %}
+    </div>
 </body>
 
 </html>

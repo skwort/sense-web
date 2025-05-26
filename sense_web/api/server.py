@@ -4,6 +4,7 @@ import subprocess
 from typing import IO, Dict, AsyncIterator, Any
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter
+from fastapi.staticfiles import StaticFiles
 from .routes import root, devices, webui
 
 from sense_web.db.session import sessionmanager
@@ -33,6 +34,11 @@ def init_api(use_webui: bool = True) -> FastAPI:
 
     if use_webui:
         api.include_router(webui.router)
+        api.mount(
+            "/static",
+            StaticFiles(directory="sense_web/api/webui/static"),
+            name="static",
+        )
 
     return api
 
