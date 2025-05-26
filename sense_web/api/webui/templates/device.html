@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Device {{ device.uuid }}{% endblock %}
+
+{% block content %}
+<div class="childContainer">
+    <h2>Device {{ device.uuid }}</h2>
+
+    <div class="flex-row">
+        <div class="flex-col">
+            <h3>Device Details</h3>
+            <p><strong>UUID:</strong> {{ device.uuid }}</p>
+            <p><strong>IMEI:</strong> {{ device.imei }}</p>
+        </div>
+
+        <div class="flex-col">
+            <h3>Queued Commands</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Command</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cmd in commands %}
+                    <tr>
+                        <td>{{ cmd }} </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3"><em>No commands queued</em></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h3>Data Points</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Data</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="3"><em>Not implemented yet</em></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}

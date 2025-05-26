@@ -18,6 +18,16 @@ body {
     width: 90%;
 }
 
+.flex-row {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.flex-col {
+    flex: 1;
+}
+
 h1 {
     text-align: center;
     margin-bottom: 1rem;
