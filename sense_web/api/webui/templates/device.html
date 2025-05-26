@@ -33,6 +33,13 @@
                     {% endfor %}
                 </tbody>
             </table>
+
+            <h3>Send Command</h3>
+            <form hx-post="/api/devices/{{ device.uuid }}/commands" hx-ext="json-enc" hx-swap="none">
+                <input type="text" name="cmd" placeholder="Enter command" />
+                <input type="number" name="timestamp" />
+                <button type="submit">Send</button>
+            </form>
         </div>
     </div>
 
