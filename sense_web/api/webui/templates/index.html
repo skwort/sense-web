@@ -25,5 +25,12 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <h3>Register New Device</h3>
+    <form hx-post="/api/devices" hx-ext="json-enc" hx-swap="none" hx-on::after-request="location.reload();">
+        <input type="text" name="imei" placeholder="Enter IMEI" />
+        <button type="submit">Send</button>
+    </form>
+
 </div>
 {% endblock %}
