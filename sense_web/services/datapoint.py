@@ -33,7 +33,7 @@ async def create_datapoint(
 
 
 async def get_datapoints_by_device_uuid(
-    device_uuid: uuid.UUID,
+    device_uuid: uuid.UUID, sort_descending: bool = True
 ) -> List[DataPointDTO]:
     async with sessionmanager.session() as session:
         stmt = select(DataPoint).where(DataPoint.device_uuid == device_uuid)
@@ -41,6 +41,11 @@ async def get_datapoints_by_device_uuid(
         if result is None:
             return []
 
-        return [
+        datapoint_list = [
             DataPointDTO.model_validate(dp) for dp in result.scalars().all()
         ]
+
+        if len(datapoint_list) > 1 and sort_descending:
+            datapoint_list.sort(key=lambda dp: dp.timestamp, reverse=True)
+
+        return datapoint_list
