@@ -44,6 +44,83 @@
         </div>
     </div>
 
+    <div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+        <h3>Sensor Graph</h3>
+
+        {% if datapoints %}
+        <label for="sensorSelect">Choose a sensor:</label>
+        <select id="sensorSelect">
+            {% for sensor in sensors %}
+            <option value="{{ sensor }}">{{ sensor }}</option>
+            {% endfor %}
+        </select>
+
+        <canvas id="sensorChart"></canvas>
+
+        <script>
+            const datapoints = {{ datapoints_dict | tojson }};
+
+            function filterDataBySensor(sensor) {
+                return datapoints
+                    .filter(dp => dp.sensor === sensor)
+                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            }
+
+            function createChart(data) {
+                const ctx = document.getElementById("sensorChart").getContext("2d");
+                return new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: data[0].sensor,
+                            data: data.map(dp => ({
+                                x: dp.timestamp,
+                                y: dp.val_float
+                            })),
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    tooltipFormat: 'Pp',
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Time'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Value (' + data[0].val_units + ')'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const sensorSelect = document.getElementById("sensorSelect");
+            let currentChart = createChart(filterDataBySensor(sensorSelect.value));
+
+            sensorSelect.addEventListener("change", () => {
+                currentChart.destroy();
+                currentChart = createChart(filterDataBySensor(sensorSelect.value));
+            });
+        </script>
+
+        {% else %}
+        <em>No data points available</em>
+        {% endif %}
+    </div>
+
     <h3>Data Points</h3>
     <table>
         <thead>

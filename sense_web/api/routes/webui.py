@@ -1,6 +1,7 @@
 import uuid
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse
+from fastapi.encoders import jsonable_encoder
 from fastapi.templating import Jinja2Templates
 from sense_web.services.datapoint import get_datapoints_by_device_uuid
 from sense_web.services.device import list_devices, get_device_by_uuid
@@ -28,6 +29,8 @@ async def device(uuid: uuid.UUID, request: Request) -> HTMLResponse:
     commands = await peek_commands(str(uuid))
 
     datapoints = await get_datapoints_by_device_uuid(uuid)
+    datapoints_dict = [jsonable_encoder(d) for d in datapoints]
+    sensors = sorted(set(dp.sensor for dp in datapoints))
 
     return templates.TemplateResponse(
         "device.html",
@@ -36,5 +39,7 @@ async def device(uuid: uuid.UUID, request: Request) -> HTMLResponse:
             "device": device,
             "commands": commands,
             "datapoints": datapoints,
+            "datapoints_dict": datapoints_dict,
+            "sensors": sensors,
         },
     )
