@@ -49,14 +49,28 @@
         <thead>
             <tr>
                 <th>Timestamp</th>
-                <th>Data</th>
+                <th>Sensor</th>
+                <th>Value</th>
+                <th>Units</th>
             </tr>
         </thead>
         <tbody>
+            {% if datapoints %}
+            {% for dp in datapoints %}
             <tr>
-                <td colspan="3"><em>Not implemented yet</em></td>
+                <td>{{ dp.timestamp }}</td>
+                <td>{{ dp.sensor }}</td>
+                <td>{{ dp.val_float if dp.val_float is not none else dp.val_str }}</td>
+                <td>{{ dp.val_units or "" }}</td>
             </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="4"><em>No data points available.</em></td>
+            </tr>
+            {% endif %}
         </tbody>
     </table>
+
 </div>
 {% endblock %}
