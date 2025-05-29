@@ -1,6 +1,8 @@
 import pytest
 import time
 import json
+import cbor2
+import datetime
 import os
 import subprocess
 import asyncio
@@ -9,6 +11,7 @@ from typing import AsyncGenerator, Generator
 from testcontainers.redis import RedisContainer
 
 from sense_web.dto.device import DeviceDTO
+from sense_web.services.datapoint import get_datapoints_by_device_uuid
 from sense_web.services.device import register_device
 from sense_web.services.ipc import (
     ipc,
@@ -34,7 +37,7 @@ async def device() -> AsyncGenerator[DeviceDTO]:
     await ipc.publish(PubSubChannels.DEVICE_REGISTRATION.value, uuid)
 
     # Let the CoAP server process the registration message
-    await asyncio.sleep(0.2)
+    await asyncio.sleep(0.1)
 
     yield device
 
@@ -160,3 +163,237 @@ async def test_delete_device_command_resource_empty(
 
     assert response.code.is_successful()
     assert len(response.payload) == 0
+
+
+@pytest.mark.asyncio
+async def test_device_data_resource_post_ok(
+    coap_server: None, db_manager: None, device: DeviceDTO
+) -> None:
+    uuid = str(device.uuid)
+    now = datetime.datetime.now(datetime.UTC)
+
+    payload = {
+        "i": device.imei[-6:],
+        "t": now.timestamp(),
+        "s": "voltage_sensor",
+        "f": 1.3,
+        "u": "V",
+    }
+
+    cbor_payload = cbor2.dumps(payload)
+
+    protocol = await Context.create_client_context()
+
+    request = Message(
+        code=Code.POST,
+        uri=f"coap://127.0.0.1/{uuid}/data",
+        payload=cbor_payload,
+    )
+
+    response = await protocol.request(request).response
+
+    assert response.code.is_successful()
+
+    dps = await get_datapoints_by_device_uuid(device.uuid)
+    assert len(dps) == 1
+
+    dp = dps[0]
+    assert dp is not None
+    assert dp.device_uuid == device.uuid
+    assert dp.timestamp == now
+    assert dp.sensor == payload["s"]
+    assert dp.val_float == payload["f"]
+    assert dp.val_units == payload["u"]
+
+
+@pytest.mark.asyncio
+async def test_device_data_resource_post_invalid_cbor(
+    coap_server: None, db_manager: None, device: DeviceDTO
+) -> None:
+    uuid = str(device.uuid)
+
+    protocol = await Context.create_client_context()
+    bad_payload = b"not-cbor"
+
+    request = Message(
+        code=Code.POST,
+        uri=f"coap://127.0.0.1/{uuid}/data",
+        payload=bad_payload,
+    )
+
+    response = await protocol.request(request).response
+    assert response.code == Code.BAD_REQUEST
+    assert response.payload == b"Invalid CBOR"
+
+
+@pytest.mark.asyncio
+async def test_device_data_resource_post_missing_imei_tail(
+    coap_server: None, db_manager: None, device: DeviceDTO
+) -> None:
+    uuid = str(device.uuid)
+
+    now = datetime.datetime.now(datetime.UTC)
+
+    payload = {
+        "t": now.timestamp(),
+        "s": "voltage_sensor",
+        "f": 1.3,
+        "u": "V",
+    }
+
+    cbor_payload = cbor2.dumps(payload)
+    protocol = await Context.create_client_context()
+
+    request = Message(
+        code=Code.POST,
+        uri=f"coap://127.0.0.1/{uuid}/data",
+        payload=cbor_payload,
+    )
+
+    response = await protocol.request(request).response
+    assert response.code == Code.UNAUTHORIZED
+    assert b"imei_tail" in response.payload
+
+
+@pytest.mark.asyncio
+async def test_device_data_resource_post_unauthorised_imei_tail(
+    coap_server: None, db_manager: None, device: DeviceDTO
+) -> None:
+    uuid = str(device.uuid)
+
+    now = datetime.datetime.now(datetime.UTC)
+
+    payload = {
+        "i": "000000",
+        "t": now.timestamp(),
+        "s": "voltage_sensor",
+        "f": 1.3,
+        "u": "V",
+    }
+
+    cbor_payload = cbor2.dumps(payload)
+    protocol = await Context.create_client_context()
+
+    request = Message(
+        code=Code.POST,
+        uri=f"coap://127.0.0.1/{uuid}/data",
+        payload=cbor_payload,
+    )
+
+    response = await protocol.request(request).response
+    assert response.code == Code.UNAUTHORIZED
+    assert b"Unauthorised" in response.payload
+
+
+@pytest.mark.asyncio
+async def test_device_data_resource_post_invalid_timestamp_type(
+    coap_server: None, db_manager: None, device: DeviceDTO
+) -> None:
+    uuid = str(device.uuid)
+
+    payload = {
+        "i": device.imei[-6:],
+        "t": "not-a-number",
+        "s": "voltage_sensor",
+        "f": 1.3,
+        "u": "V",
+    }
+
+    cbor_payload = cbor2.dumps(payload)
+    protocol = await Context.create_client_context()
+
+    request = Message(
+        code=Code.POST,
+        uri=f"coap://127.0.0.1/{uuid}/data",
+        payload=cbor_payload,
+    )
+
+    response = await protocol.request(request).response
+    assert response.code == Code.BAD_REQUEST
+    assert b"Invalid timestamp" in response.payload
+
+
+@pytest.mark.asyncio
+async def test_device_data_resource_post_timestamp_exception(
+    coap_server: None, db_manager: None, device: DeviceDTO
+) -> None:
+    uuid = str(device.uuid)
+
+    payload = {
+        "i": device.imei[-6:],
+        "t": 1e20,
+        "s": "voltage_sensor",
+        "f": 1.3,
+        "u": "V",
+    }
+
+    cbor_payload = cbor2.dumps(payload)
+    protocol = await Context.create_client_context()
+
+    request = Message(
+        code=Code.POST,
+        uri=f"coap://127.0.0.1/{uuid}/data",
+        payload=cbor_payload,
+    )
+
+    response = await protocol.request(request).response
+    assert response.code == Code.BAD_REQUEST
+    assert b"Invalid timestamp" in response.payload
+
+
+@pytest.mark.asyncio
+async def test_device_data_resource_post_missing_sensor(
+    coap_server: None, db_manager: None, device: DeviceDTO
+) -> None:
+    uuid = str(device.uuid)
+
+    now = datetime.datetime.now(datetime.UTC)
+
+    payload = {
+        "i": "123456",
+        "t": now.timestamp(),
+        "f": 1.3,
+        "u": "V",
+    }
+
+    cbor_payload = cbor2.dumps(payload)
+    protocol = await Context.create_client_context()
+
+    request = Message(
+        code=Code.POST,
+        uri=f"coap://127.0.0.1/{uuid}/data",
+        payload=cbor_payload,
+    )
+
+    response = await protocol.request(request).response
+    assert response.code == Code.BAD_REQUEST
+    assert b"Missing sensor" in response.payload
+
+
+@pytest.mark.asyncio
+async def test_device_data_resource_post_missing_value_fields(
+    coap_server: None, db_manager: None, device: DeviceDTO
+) -> None:
+    uuid = str(device.uuid)
+
+    now = datetime.datetime.now(datetime.UTC)
+
+    payload = {
+        "i": "123456",
+        "t": now.timestamp(),
+        "s": "voltage_sensor",
+        "u": "V",
+    }
+
+    cbor_payload = cbor2.dumps(payload)
+    protocol = await Context.create_client_context()
+
+    request = Message(
+        code=Code.POST,
+        uri=f"coap://127.0.0.1/{uuid}/data",
+        payload=cbor_payload,
+    )
+
+    response = await protocol.request(request).response
+    assert response.code == Code.BAD_REQUEST
+    assert response.payload == b"Missing value"
