@@ -8,6 +8,7 @@ from aiocoap import Context, Message, Code
 from typing import AsyncGenerator, Generator
 from testcontainers.redis import RedisContainer
 
+from sense_web.dto.device import DeviceDTO
 from sense_web.services.device import register_device
 from sense_web.services.ipc import (
     ipc,
@@ -20,6 +21,24 @@ from sense_web.coap.server import start_coap
 
 DB_URI = "sqlite+aiosqlite:///pytest.db"
 os.environ["DATABASE_URI"] = DB_URI
+
+
+@pytest.fixture(scope="function")
+async def device() -> AsyncGenerator[DeviceDTO]:
+    device = await register_device("123456", "d1")
+    uuid = str(device.uuid)
+
+    await ipc.init(
+        host=os.environ["REDIS_HOST"], port=int(os.environ["REDIS_PORT"])
+    )
+    await ipc.publish(PubSubChannels.DEVICE_REGISTRATION.value, uuid)
+
+    # Let the CoAP server process the registration message
+    await asyncio.sleep(0.2)
+
+    yield device
+
+    await ipc.close()
 
 
 @pytest.fixture(scope="function")
@@ -69,47 +88,29 @@ def coap_server() -> Generator[None, None, None]:
 
 
 @pytest.mark.asyncio
-async def test_device_resource(coap_server: None, db_manager: None) -> None:
-    device = await register_device("12345", "d1")
-    uuid = device.uuid
-
-    await ipc.init(
-        host=os.environ["REDIS_HOST"], port=int(os.environ["REDIS_PORT"])
-    )
-    await ipc.publish(
-        PubSubChannels.DEVICE_REGISTRATION.value, str(device.uuid)
-    )
-
-    # Let the CoAP server process the registration message
-    await asyncio.sleep(0.2)
+async def test_device_resource(
+    coap_server: None, db_manager: None, device: DeviceDTO
+) -> None:
+    uuid = str(device.uuid)
 
     protocol = await Context.create_client_context()
 
-    request = Message(code=Code.GET, uri=f"coap://127.0.0.1/{str(uuid)}")
+    request = Message(code=Code.GET, uri=f"coap://127.0.0.1/{uuid}")
     response = await protocol.request(request).response
 
     assert response.code.is_successful()
     assert isinstance(response.payload, bytes)
 
-    await ipc.close()
-
 
 @pytest.mark.asyncio
 async def test_get_delete_device_command_resource(
-    coap_server: None, db_manager: None
+    coap_server: None, db_manager: None, device: DeviceDTO
 ) -> None:
-    device = await register_device("12345", "d1")
     uuid = str(device.uuid)
-
-    await ipc.init(
-        host=os.environ["REDIS_HOST"], port=int(os.environ["REDIS_PORT"])
-    )
-    await ipc.publish(PubSubChannels.DEVICE_REGISTRATION.value, uuid)
 
     cmd = {"test": "command"}
     await enqueue_command(uuid, cmd)
 
-    # Let the CoAP server process the registration message
     await asyncio.sleep(0.2)
 
     protocol = await Context.create_client_context()
@@ -128,23 +129,12 @@ async def test_get_delete_device_command_resource(
     assert response.code.is_successful()
     assert len(await peek_commands(uuid)) == 0
 
-    await ipc.close()
-
 
 @pytest.mark.asyncio
 async def test_get_device_command_resource_empty(
-    coap_server: None, db_manager: None
+    coap_server: None, db_manager: None, device: DeviceDTO
 ) -> None:
-    device = await register_device("12345", "d1")
     uuid = str(device.uuid)
-
-    await ipc.init(
-        host=os.environ["REDIS_HOST"], port=int(os.environ["REDIS_PORT"])
-    )
-    await ipc.publish(PubSubChannels.DEVICE_REGISTRATION.value, uuid)
-
-    # Let the CoAP server process the registration message
-    await asyncio.sleep(0.1)
 
     protocol = await Context.create_client_context()
 
@@ -154,23 +144,12 @@ async def test_get_device_command_resource_empty(
     assert response.code.is_successful()
     assert len(response.payload) == 0
 
-    await ipc.close()
-
 
 @pytest.mark.asyncio
 async def test_delete_device_command_resource_empty(
-    coap_server: None, db_manager: None
+    coap_server: None, db_manager: None, device: DeviceDTO
 ) -> None:
-    device = await register_device("12345", "d1")
     uuid = str(device.uuid)
-
-    await ipc.init(
-        host=os.environ["REDIS_HOST"], port=int(os.environ["REDIS_PORT"])
-    )
-    await ipc.publish(PubSubChannels.DEVICE_REGISTRATION.value, uuid)
-
-    # Let the CoAP server process the registration message
-    await asyncio.sleep(0.1)
 
     protocol = await Context.create_client_context()
 
@@ -181,5 +160,3 @@ async def test_delete_device_command_resource_empty(
 
     assert response.code.is_successful()
     assert len(response.payload) == 0
-
-    await ipc.close()
