@@ -397,3 +397,25 @@ async def test_device_data_resource_post_missing_value_fields(
     response = await protocol.request(request).response
     assert response.code == Code.BAD_REQUEST
     assert response.payload == b"Missing value"
+
+
+@pytest.mark.asyncio
+async def test_device_data_resource_post_list_payload_fails(
+    coap_server: None, db_manager: None, device: DeviceDTO
+) -> None:
+    uuid = str(device.uuid)
+
+    payload = [0, 1, 2, 3]
+
+    cbor_payload = cbor2.dumps(payload)
+    protocol = await Context.create_client_context()
+
+    request = Message(
+        code=Code.POST,
+        uri=f"coap://127.0.0.1/{uuid}/data",
+        payload=cbor_payload,
+    )
+
+    response = await protocol.request(request).response
+    assert response.code == Code.BAD_REQUEST
+    assert b"Invalid CBOR" in response.payload

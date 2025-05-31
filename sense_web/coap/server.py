@@ -131,6 +131,10 @@ class DeviceDataResource(resource.Resource):
             log.info(f"{log_start} FAILED: Invalid CBOR")
             return Message(code=Code.BAD_REQUEST, payload=b"Invalid CBOR")
 
+        if not isinstance(data, dict):
+            log.info(f"{log_start} FAILED: Invalid CBOR")
+            return Message(code=Code.BAD_REQUEST, payload=b"Invalid CBOR")
+
         device = await get_device_by_uuid(self._uuid)
         if device is None:
             log.info(f"{log_start} FAILED: Invalid device")
