@@ -140,12 +140,8 @@ class DeviceDataResource(resource.Resource):
             log.info(f"{log_start} FAILED: Invalid device")
             return Message(code=Code.BAD_REQUEST, payload=b"Invalid device")
 
-        imei_tail = data.get("i", None)
-        if (
-            not imei_tail
-            or not isinstance(imei_tail, str)
-            or len(imei_tail) != 6
-        ):
+        imei_tail = str(data.get("i", None))
+        if not imei_tail or len(imei_tail) != 6:
             log.info(f"{log_start} FAILED: Missing or invalid imei_tail")
             return Message(
                 code=Code.UNAUTHORIZED, payload=b"Missing or invalid imei_tail"
