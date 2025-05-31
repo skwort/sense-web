@@ -1,9 +1,15 @@
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 from typing import List
 
 from sense_web.exceptions import DeviceAlreadyExists
+from sense_web.services.datapoint import (
+    get_datapoints_by_device_uuid,
+    delete_datapoint,
+)
+from sense_web.dto.datapoint import DataPointDTO
 from sense_web.services.device import (
     register_device,
     list_devices,
@@ -126,3 +132,38 @@ async def commands_get(uuid: UUID) -> list[CommandResponse] | None:
         return []
 
     return [CommandResponse.model_validate(c) for c in commands]
+
+
+@router.get(
+    "/devices/{device_uuid}/data",
+    response_model=list[DataPointDTO] | None,
+    status_code=status.HTTP_200_OK,
+)
+async def datapoints_get(device_uuid: UUID) -> list[DataPointDTO] | None:
+    device = await get_device_by_uuid(device_uuid)
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    return await get_datapoints_by_device_uuid(device_uuid)
+
+
+@router.delete(
+    "/devices/{device_uuid}/data/{datapoint_uuid}",
+    response_model=None,
+    status_code=status.HTTP_200_OK,
+)
+async def datapoint_delete(
+    device_uuid: UUID, datapoint_uuid: UUID
+) -> JSONResponse | None:
+    device = await get_device_by_uuid(device_uuid)
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    deleted = await delete_datapoint(datapoint_uuid)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Datapoint not found")
+
+    return JSONResponse(
+        content={"detail": "Datapoint deleted"}, status_code=200
+    )

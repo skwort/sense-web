@@ -6,10 +6,12 @@ import subprocess
 import time
 import uuid
 import asyncio
+import datetime
 from testcontainers.redis import RedisContainer
 
 from sense_web.db.session import sessionmanager
 from sense_web.api.server import start_api
+from sense_web.services.datapoint import create_datapoint
 from sense_web.services.ipc import ipc, PubSubChannels
 
 DB_URI = "sqlite+aiosqlite:///pytest.db"
@@ -250,3 +252,62 @@ def test_api_commands_get_not_found(api_server: str, db_manager: None) -> None:
             f"/api/devices/{device_uuid}/commands", timeout=2
         )
         assert command_response.status_code == 404
+
+
+async def test_api_data_get(api_server: str, db_manager: None) -> None:
+    with httpx.Client(base_url=api_server) as client:
+        data = {"imei": "200000000000002", "name": "d1"}
+        register_response = client.post("/api/devices", json=data, timeout=2)
+
+        assert register_response.status_code == 201
+        device_uuid = register_response.json()["uuid"]
+
+        dp = await create_datapoint(
+            device_uuid=uuid.UUID(device_uuid),
+            timestamp=datetime.datetime.now(datetime.UTC),
+            sensor="humidity",
+            val_float=55.2,
+            val_units="%",
+        )
+
+        response = client.get(f"/api/devices/{device_uuid}/data", timeout=2)
+
+        assert response.status_code == 200
+
+        response_dps = response.json()
+        assert len(response_dps) == 1
+
+        response_dp = response_dps[0]
+        assert response_dp["sensor"] == dp.sensor
+        assert response_dp["val_float"] == dp.val_float
+        assert response_dp["val_units"] == dp.val_units
+
+
+async def test_api_data_delete(api_server: str, db_manager: None) -> None:
+    with httpx.Client(base_url=api_server) as client:
+        data = {"imei": "200000000000002", "name": "d1"}
+        register_response = client.post("/api/devices", json=data, timeout=2)
+
+        assert register_response.status_code == 201
+        device_uuid = register_response.json()["uuid"]
+
+        dp = await create_datapoint(
+            device_uuid=uuid.UUID(device_uuid),
+            timestamp=datetime.datetime.now(datetime.UTC),
+            sensor="humidity",
+            val_float=55.2,
+            val_units="%",
+        )
+
+        response = client.delete(
+            f"/api/devices/{device_uuid}/data/{str(dp.uuid)}", timeout=2
+        )
+
+        assert response.status_code == 200
+
+        response = client.get(f"/api/devices/{device_uuid}/data", timeout=2)
+
+        assert response.status_code == 200
+
+        response_dps = response.json()
+        assert len(response_dps) == 0
