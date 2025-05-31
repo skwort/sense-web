@@ -6,6 +6,7 @@ from sense_web.db.session import DatabaseSessionManager, sessionmanager
 from sense_web.services.device import register_device
 from sense_web.services.datapoint import (
     create_datapoint,
+    delete_datapoint,
     get_datapoints_by_device_uuid,
 )
 
@@ -40,6 +41,33 @@ async def test_create_datapoint(db_manager: DatabaseSessionManager) -> None:
     assert dp.val_float == 22.5
     assert dp.val_units == "C"
     assert dp.val_str is None
+
+
+@pytest.mark.asyncio
+async def test_delete_datapoint(db_manager: DatabaseSessionManager) -> None:
+    device = await register_device("12345", "device1")
+
+    timestamp = datetime.datetime.now(datetime.UTC)
+    dp = await create_datapoint(
+        device_uuid=device.uuid,
+        timestamp=timestamp,
+        sensor="temp",
+        val_float=22.5,
+        val_units="C",
+    )
+
+    assert dp is not None
+
+    assert await delete_datapoint(dp.uuid) is True
+
+
+@pytest.mark.asyncio
+async def test_delete_datapoint_not_exists(
+    db_manager: DatabaseSessionManager,
+) -> None:
+    device = await register_device("12345", "device1")
+
+    assert await delete_datapoint(device.uuid) is False
 
 
 @pytest.mark.asyncio

@@ -2,7 +2,7 @@ import uuid
 from typing import List
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sense_web.db.models import DataPoint
 from sense_web.db.session import sessionmanager
 from sense_web.dto.datapoint import DataPointDTO
@@ -49,3 +49,11 @@ async def get_datapoints_by_device_uuid(
             datapoint_list.sort(key=lambda dp: dp.timestamp, reverse=True)
 
         return datapoint_list
+
+
+async def delete_datapoint(datapoint_uuid: uuid.UUID) -> bool:
+    async with sessionmanager.session() as session:
+        stmt = delete(DataPoint).where(DataPoint.uuid == datapoint_uuid)
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.rowcount > 0
