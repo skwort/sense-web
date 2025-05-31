@@ -8,9 +8,10 @@ import subprocess
 from typing import IO, Any
 from aiocoap import Context, Message, Code
 import aiocoap.resource as resource
-import logging as log
+import logging
 import cbor2
 import datetime
+import re
 
 from sense_web.db.session import sessionmanager
 from sense_web.services.datapoint import create_datapoint
@@ -22,11 +23,24 @@ from sense_web.services.ipc import (
     PubSubChannels,
 )
 
-log.basicConfig(level=log.INFO)
+log = logging.getLogger("coap")
+log.setLevel(logging.INFO)
 
 DB_URI = os.getenv("DATABASE_URI", "sqlite+aiosqlite:///./dev.db")
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+
+coap_resource_pattern = re.compile(
+    r"coap://(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?(/.*)"
+)
+
+
+def format_coap_access_log(request: Message) -> str:
+    remote_path = request.remote.uri_base.lstrip("coap://")
+    match = coap_resource_pattern.search(request.get_request_uri())
+    resource_path = match.group(1) if match else "Match failed"
+
+    return f" {remote_path} - {request.code} {resource_path}"
 
 
 def start_coap(
@@ -58,6 +72,8 @@ class DeviceResource(resource.Resource):
         self._uuid = uuid
 
     async def render_get(self, request: Message) -> Message:
+        log.info(format_coap_access_log(request))
+
         return Message(
             code=Code.CONTENT, payload=bytes(str(self._uuid), "utf-8")
         )
@@ -68,6 +84,8 @@ class DeviceCommandResource(resource.Resource):
         self._uuid = uuid
 
     async def render_delete(self, request: Message) -> Message:
+        log.info(format_coap_access_log(request))
+
         cmd = await dequeue_command(str(self._uuid))
         if not cmd:
             return Message(code=Code.CONTENT, payload=b"")
@@ -76,6 +94,8 @@ class DeviceCommandResource(resource.Resource):
         return Message(code=Code.DELETED)
 
     async def render_get(self, request: Message) -> Message:
+        log.info(format_coap_access_log(request))
+
         commands = await peek_commands(str(self._uuid))
         if len(commands) == 0:
             return Message(code=Code.CONTENT, payload=b"")
@@ -102,14 +122,18 @@ class DeviceDataResource(resource.Resource):
 
         The IMEI tail will be used to verify the identity of the device.
         """
+        log_start = format_coap_access_log(request)
 
         try:
             data = cbor2.loads(request.payload)
+            log.info(f"{log_start} PAYLOAD: {data}")
         except Exception:
+            log.info(f"{log_start} FAILED: Invalid CBOR")
             return Message(code=Code.BAD_REQUEST, payload=b"Invalid CBOR")
 
         device = await get_device_by_uuid(self._uuid)
         if device is None:
+            log.info(f"{log_start} FAILED: Invalid device")
             return Message(code=Code.BAD_REQUEST, payload=b"Invalid device")
 
         imei_tail = data.get("i", None)
@@ -118,22 +142,28 @@ class DeviceDataResource(resource.Resource):
             or not isinstance(imei_tail, str)
             or len(imei_tail) != 6
         ):
+            log.info(f"{log_start} FAILED: Missing or invalid imei_tail")
             return Message(
                 code=Code.UNAUTHORIZED, payload=b"Missing or invalid imei_tail"
             )
 
         if device.imei[-6:] != imei_tail:
+            log.info(f"{log_start} FAILED: Unauthorised")
             return Message(code=Code.UNAUTHORIZED, payload=b"Unauthorised")
 
         ts = data.get("t", None)
         if not isinstance(ts, (int, float)):
-            return Message(code=Code.BAD_REQUEST, payload=b"Invalid timestamp")
+            log.info(f"{log_start} FAILED: Invalid timestamp format")
+            return Message(
+                code=Code.BAD_REQUEST, payload=b"Invalid timestamp format"
+            )
 
         try:
             timestamp = datetime.datetime.fromtimestamp(
                 ts, tz=datetime.timezone.utc
             )
         except (OverflowError, OSError):
+            log.info(f"{log_start} FAILED: Invalid timestamp value")
             return Message(
                 code=Code.BAD_REQUEST, payload=b"Invalid timestamp value"
             )
@@ -144,9 +174,11 @@ class DeviceDataResource(resource.Resource):
         val_units = data.get("u", None)
 
         if sensor is None:
+            log.info(f"{log_start} FAILED: Missing sensor")
             return Message(code=Code.BAD_REQUEST, payload=b"Missing sensor")
 
         if val_float is None and val_str is None:
+            log.info(f"{log_start} FAILED: Missing value")
             return Message(code=Code.BAD_REQUEST, payload=b"Missing value")
 
         dp = await create_datapoint(
@@ -158,6 +190,7 @@ class DeviceDataResource(resource.Resource):
             val_units=val_units,
         )
 
+        log.info(f"{log_start} ACCEPTED")
         log.info(f"Created DataPoint:\n{dp!r}")
 
         return Message(code=Code.CREATED, payload=b"DataPoint accepted")
