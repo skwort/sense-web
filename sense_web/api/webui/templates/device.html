@@ -154,7 +154,7 @@
                             label: data[0].sensor,
                             data: data.map(dp => ({
                                 x: dp.timestamp,
-                                y: dp.val_float
+                                y: dp.val_float ? dp.val_float : dp.val_int
                             })),
                             backgroundColor: "SteelBlue",
                             borderColor: "SteelBlue",
@@ -231,7 +231,17 @@
             <tr>
                 <td>{{ dp.timestamp }}</td>
                 <td>{{ dp.sensor }}</td>
-                <td>{{ dp.val_float if dp.val_float is not none else dp.val_str }}</td>
+                <td>
+                    {% if dp.val_float is not none %}
+                    {{ dp.val_float }}
+                    {% elif dp.val_int is not none %}
+                    {{ dp.val_int }}
+                    {% elif dp.val_str is not none %}
+                    {{ dp.val_str }}
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </td>
                 <td>{{ dp.val_units or "" }}</td>
             </tr>
             {% endfor %}
