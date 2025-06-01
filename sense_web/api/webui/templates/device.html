@@ -82,10 +82,10 @@
             }
 
             function toDatetimeLocal(date) {
-                return date.getFullYear() + '-' +
-                    pad(date.getMonth() + 1) + '-' +
-                    pad(date.getDate()) + 'T' +
-                    pad(date.getHours()) + ':' +
+                return date.getFullYear() + "-" +
+                    pad(date.getMonth() + 1) + "-" +
+                    pad(date.getDate()) + "T" +
+                    pad(date.getHours()) + ":" +
                     pad(date.getMinutes());
             }
 
@@ -156,27 +156,27 @@
                                 x: dp.timestamp,
                                 y: dp.val_float
                             })),
-                            borderColor: 'rgb(75, 192, 192)',
-                            tension: 0.1
+                            backgroundColor: "SteelBlue",
+                            borderColor: "SteelBlue",
                         }]
                     };
 
                     const chartOptions = {
                         scales: {
                             x: {
-                                type: 'time',
+                                type: "time",
                                 time: {
-                                    tooltipFormat: 'Pp',
+                                    tooltipFormat: "Pp",
                                 },
                                 title: {
                                     display: true,
-                                    text: 'Time'
+                                    text: "Time"
                                 }
                             },
                             y: {
                                 title: {
                                     display: true,
-                                    text: 'Value (' + data[0].val_units + ')'
+                                    text: "Value (" + data[0].val_units + ")"
                                 }
                             }
                         }
@@ -184,7 +184,7 @@
 
                     if (currentChart) currentChart.destroy();
                     currentChart = new Chart(ctx, {
-                        type: 'line',
+                        type: "scatter",
                         data: chartData,
                         options: chartOptions
                     });
