@@ -116,6 +116,7 @@ class DeviceDataResource(resource.Resource):
         - i -> imei_tail: Last 6 digits of device IMEI for validation
         - t -> timestamp: Unix timestamp indicating when value was recorded
         - s -> sensor: Sensor where value was recorded
+        - n -> val_int: Integer value if applicable
         - f -> val_float: Float value if applicable
         - r -> val_str: String value if applicable
         - u -> val_units: Units of value if applicable
@@ -169,6 +170,7 @@ class DeviceDataResource(resource.Resource):
             )
 
         sensor = data.get("s", None)
+        val_int = data.get("n", None)
         val_float = data.get("f", None)
         val_str = data.get("r", None)
         val_units = data.get("u", None)
@@ -177,7 +179,7 @@ class DeviceDataResource(resource.Resource):
             log.info(f"{log_start} FAILED: Missing sensor")
             return Message(code=Code.BAD_REQUEST, payload=b"Missing sensor")
 
-        if val_float is None and val_str is None:
+        if val_float is None and val_str is None and val_int is None:
             log.info(f"{log_start} FAILED: Missing value")
             return Message(code=Code.BAD_REQUEST, payload=b"Missing value")
 
@@ -185,6 +187,7 @@ class DeviceDataResource(resource.Resource):
             device_uuid=device.uuid,
             timestamp=timestamp,
             sensor=sensor,
+            val_int=val_int,
             val_float=val_float,
             val_str=val_str,
             val_units=val_units,

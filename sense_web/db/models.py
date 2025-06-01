@@ -1,5 +1,6 @@
 from sqlalchemy import (
     String,
+    Integer,
     Uuid,
     Index,
     ForeignKey,
@@ -57,7 +58,9 @@ class DataPoint(Base):
             was recorded.
         sensor (str): A short string identifier for the sensor or data
             source (e.g., "gps_lat", "temp", "rs232_msg").
-        val_float (float, optional): A numeric value, if applicable
+        val_int (float, optional): An integer value, if applicable
+            for the sensor.
+        val_float (float, optional): A decimal value, if applicable
             for the sensor.
         val_str (str, optional): A string value, for cases like serial
             input or textual messages.
@@ -80,6 +83,7 @@ class DataPoint(Base):
         DateTime(timezone=True), nullable=False
     )
 
+    val_int: Mapped[int] = mapped_column(Integer, nullable=True)
     val_float: Mapped[float] = mapped_column(Float, nullable=True)
     val_str: Mapped[str] = mapped_column(String, nullable=True)
     val_units: Mapped[str] = mapped_column(String, nullable=True)
@@ -88,7 +92,9 @@ class DataPoint(Base):
         Index("idx_sensor_time", "sensor", "timestamp"),
         Index("idx_device_sensor", "device_uuid", "sensor"),
         CheckConstraint(
-            "(val_float IS NOT NULL) OR (val_str IS NOT NULL)",
+            "(val_float IS NOT NULL) OR "
+            "(val_str IS NOT NULL) OR "
+            "(val_int IS NOT NULL)",
             name="check_value_present",
         ),
     )
@@ -101,6 +107,7 @@ class DataPoint(Base):
             f"  device_uuid={self.device_uuid!r}\n"
             f"  sensor={self.sensor!r}\n"
             f"  timestamp={self.timestamp!r}\n"
+            f"  val_int={self.val_float!r}\n"
             f"  val_float={self.val_float!r}\n"
             f"  val_str={self.val_str!r}\n"
             f"  val_units={self.val_units!r}\n"

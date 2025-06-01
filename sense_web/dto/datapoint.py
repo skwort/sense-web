@@ -10,6 +10,7 @@ class DataPointDTO(BaseModel):
     device_uuid: UUID
     timestamp: datetime.datetime
     sensor: str
+    val_int: int | None = None
     val_float: float | None = None
     val_str: str | None = None
     val_units: str | None = None
