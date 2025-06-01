@@ -50,30 +50,106 @@
 
         <h3>Sensor Graph</h3>
 
-        {% if datapoints %}
-        <label for="sensorSelect">Choose a sensor:</label>
-        <select id="sensorSelect">
-            {% for sensor in sensors %}
-            <option value="{{ sensor }}">{{ sensor }}</option>
-            {% endfor %}
-        </select>
+        <div class="flex-row">
+            <div>
+                <label for="sensorSelect">Choose a sensor:</label>
+                <select id="sensorSelect">
+                    {% for sensor in sensors %}
+                    <option value="{{ sensor }}">{{ sensor }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <canvas id="sensorChart"></canvas>
+            <div>
+                <label for="fromTime">From:</label>
+                <input type="datetime-local" id="fromTime" />
+            </div>
+            <div>
+                <label for="toTime">To:</label>
+                <input type="datetime-local" id="toTime" />
+            </div>
+        </div>
+
+        <div id="noDataMessage" style="display: block; padding-bottom: 1rem;">
+            <em>No data points available.</em>
+        </div>
+        <canvas id="sensorChart" style="display: none;"></canvas>
 
         <script>
-            const datapoints = {{ datapoints_dict | tojson }};
+            // Set initial datetime values
+            function pad(n) {
+                return n < 10 ? '0' + n : n;
+            }
 
-            function filterDataBySensor(sensor) {
+            function toDatetimeLocal(date) {
+                return date.getFullYear() + '-' +
+                    pad(date.getMonth() + 1) + '-' +
+                    pad(date.getDate()) + 'T' +
+                    pad(date.getHours()) + ':' +
+                    pad(date.getMinutes());
+            }
+
+            const now = new Date();
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+
+            document.addEventListener("DOMContentLoaded", () => {
+                document.getElementById("fromTime").value = toDatetimeLocal(todayStart);
+                document.getElementById("toTime").value = toDatetimeLocal(now);
+            });
+        </script>
+
+        <script>
+            // Graph data for device
+            const apiUrl = "/api/devices/{{ device.uuid }}/data";
+            let datapoints = [];
+
+            const sensorSelect = document.getElementById("sensorSelect");
+            const fromInput = document.getElementById("fromTime");
+            const toInput = document.getElementById("toTime");
+
+            const ctx = document.getElementById("sensorChart").getContext("2d");
+            let currentChart = null;
+
+            function filterData(sensor, from, to) {
                 return datapoints
                     .filter(dp => dp.sensor === sensor)
+                    .filter(dp => {
+                        const ts = new Date(dp.timestamp);
+                        return (!from || ts >= from) && (!to || ts <= to);
+                    })
                     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             }
 
-            function createChart(data) {
-                const ctx = document.getElementById("sensorChart").getContext("2d");
-                return new Chart(ctx, {
-                    type: 'line',
-                    data: {
+            function updateChart() {
+                try {
+                    const sensor = sensorSelect.value;
+                    const from = fromInput.value ? new Date(fromInput.value) : null;
+                    const to = toInput.value ? new Date(toInput.value) : null;
+
+                    const chartEl = document.getElementById("sensorChart");
+                    const msgEl = document.getElementById("noDataMessage");
+
+                    console.log("updateChart called with:", { sensor, from, to });
+
+                    const data = filterData(sensor, from, to);
+                    console.log("Filtered data length:", data.length);
+
+                    if (!data.length) {
+                        console.warn("No data after filtering.");
+                        if (currentChart) {
+                            currentChart.destroy();
+                            currentChart = null;
+                        }
+                        chartEl.style.display = "none";
+                        msgEl.style.display = "block";
+                        return;
+                    }
+
+                    chartEl.style.display = "block";
+                    msgEl.style.display = "none";
+
+                    const chartData = {
                         datasets: [{
                             label: data[0].sensor,
                             data: data.map(dp => ({
@@ -83,8 +159,9 @@
                             borderColor: 'rgb(75, 192, 192)',
                             tension: 0.1
                         }]
-                    },
-                    options: {
+                    };
+
+                    const chartOptions = {
                         scales: {
                             x: {
                                 type: 'time',
@@ -103,22 +180,39 @@
                                 }
                             }
                         }
-                    }
-                });
+                    };
+
+                    if (currentChart) currentChart.destroy();
+                    currentChart = new Chart(ctx, {
+                        type: 'line',
+                        data: chartData,
+                        options: chartOptions
+                    });
+                } catch (err) {
+                    console.error("Error in updateChart:", err);
+                }
             }
 
-            const sensorSelect = document.getElementById("sensorSelect");
-            let currentChart = createChart(filterDataBySensor(sensorSelect.value));
 
-            sensorSelect.addEventListener("change", () => {
-                currentChart.destroy();
-                currentChart = createChart(filterDataBySensor(sensorSelect.value));
-            });
+            async function fetchData() {
+                try {
+                    const res = await fetch(apiUrl);
+                    if (!res.ok) throw new Error("Failed to fetch datapoints");
+                    datapoints = await res.json();
+                    updateChart();
+                } catch (err) {
+                    console.error("Error fetching datapoints:", err);
+                }
+            }
+
+            fetchData();
+
+            setInterval(fetchData, 10000);
+
+            sensorSelect.addEventListener("change", updateChart);
+            fromInput.addEventListener("change", updateChart);
+            toInput.addEventListener("change", updateChart);
         </script>
-
-        {% else %}
-        <em>No data points available</em>
-        {% endif %}
     </div>
 
     <h3>Data Points</h3>
