@@ -1,7 +1,8 @@
+from enum import IntEnum
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List
 
 from sense_web.exceptions import DeviceAlreadyExists
@@ -22,6 +23,7 @@ from sense_web.services.ipc import (
     peek_commands,
     enqueue_command,
 )
+from sense_web.services.command import CommandType
 
 router = APIRouter()
 
@@ -39,13 +41,23 @@ class DeviceResponse(BaseModel):
 
 
 class CommandRequest(BaseModel):
-    cmd: str
-    timestamp: int
+    ty: CommandType = Field(..., description="Command type")
+    ta: int = Field(
+        ..., description="Target ID (sensor or rail, depending on ty)"
+    )
+    i: int | None = Field(
+        None, description="Integer payload, e.g., poll interval in ms"
+    )
+    b: bool | None = Field(
+        None, description="Boolean payload, e.g., rail state"
+    )
 
 
 class CommandResponse(BaseModel):
-    cmd: str
-    timestamp: int
+    ty: CommandType
+    ta: int
+    i: int | None = None
+    b: bool | None = None
 
 
 @router.post(

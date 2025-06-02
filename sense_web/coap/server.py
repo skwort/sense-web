@@ -43,6 +43,10 @@ def format_coap_access_log(request: Message) -> str:
     return f" {remote_path} - {request.code} {resource_path}"
 
 
+def filter_none(d: dict[Any, Any]) -> dict[Any, Any]:
+    return {k: v for k, v in d.items() if v is not None}
+
+
 def start_coap(
     host: str,
     port: int,
@@ -98,10 +102,11 @@ class DeviceCommandResource(resource.Resource):
 
         commands = await peek_commands(str(self._uuid))
         if len(commands) == 0:
-            return Message(code=Code.CONTENT, payload=b"")
+            empty_cmd = {"ty": 0, "ta": 0}
+            return Message(code=Code.CONTENT, payload=cbor2.dumps(empty_cmd))
 
-        command = json.dumps(commands[0])
-        return Message(code=Code.CONTENT, payload=bytes(command, "utf-8"))
+        command = cbor2.dumps(filter_none(commands[0]))
+        return Message(code=Code.CONTENT, payload=command)
 
 
 class DeviceDataResource(resource.Resource):

@@ -1,0 +1,27 @@
+{% if ty == 1 %} {# SET_POLL_RATE #}
+<label>Sensor</label>
+<select name="ta">
+    {% for k, v in cmd_sensor_map.items() %}
+    <option value="{{ k }}">{{ v }}</option>
+    {% endfor %}
+</select>
+
+<label>Poll Interval (seconds)</label>
+<input type="number" name="i" min="1" />
+
+{% elif ty == 2 %} {# SET_RAIL_STATE #}
+<label>Rail</label>
+<select name="ta">
+    {% for k, v in cmd_rail_map.items() %}
+    <option value="{{ k }}">{{ v }}</option>
+    {% endfor %}
+</select>
+
+<label>State</label>
+<select name="b">
+    <option value="1">On</option>
+    <option value="0">Off</option>
+</select>
+{% else %}
+<p><em>No fields for selected command.</em></p>
+{% endif %}
